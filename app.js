@@ -1,94 +1,132 @@
+```javascript
+const CSV_URL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1536459638&single=true&output=csv";
+
 const META = 250000;
 
-const vendedores = {
-  "Analu": 0,
-  "Esterzinha": 0,
-  "Julesco": 0,
-  "Wes": 0
-};
+async function carregarDados() {
 
-const dados = [
-  {
-    dia:"01/06",
-    valores:[6544.30,6507.78,4847.56,4560.28]
-  },
-  {
-    dia:"02/06",
-    valores:[1747.55,4168.44,4879.54,3829.45]
-  }
-];
+    const response = await fetch(CSV_URL);
+    const csv = await response.text();
 
-let totalVendido = 0;
+    const linhas = csv.trim().split("\n");
 
-dados.forEach(dia => {
-  vendedores["Analu"] += dia.valores[0];
-  vendedores["Esterzinha"] += dia.valores[1];
-  vendedores["Julesco"] += dia.valores[2];
-  vendedores["Wes"] += dia.valores[3];
+    const cabecalho = linhas[0].split(",");
 
-  totalVendido += dia.valores.reduce((a,b)=>a+b,0);
-});
+    const dias = cabecalho.slice(1);
 
-const falta = META - totalVendido;
-const percentual = ((totalVendido/META)*100).toFixed(2);
+    let vendedores = {};
+    let totalVendido = 0;
 
-document.getElementById("vendido").innerHTML =
-totalVendido.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    let tabela = `
+    <table>
+        <tr>
+            <th>Closer</th>
+            ${dias.map(d => `<th>${d}</th>`).join("")}
+        </tr>
+    `;
 
-document.getElementById("falta").innerHTML =
-falta.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    for(let i = 1; i < linhas.length; i++){
 
-document.getElementById("percentual").innerHTML =
-percentual + "%";
+        const colunas = linhas[i].split(",");
 
-document.getElementById("barra").style.width =
-percentual + "%";
+        const nome = colunas[0];
 
-const ranking = Object.entries(vendedores)
-.sort((a,b)=>b[1]-a[1]);
+        vendedores[nome] = 0;
 
-let rankingHtml = "";
+        tabela += `<tr><td>${nome}</td>`;
 
-ranking.forEach((v,index)=>{
-rankingHtml += `
-<p>${index+1}º ${v[0]} - ${v[1].toLocaleString('pt-BR',{
-style:'currency',
-currency:'BRL'
-})}</p>
-`;
-});
+        for(let j = 1; j < colunas.length; j++){
 
-document.getElementById("ranking").innerHTML =
-rankingHtml;
+            let valor = parseFloat(
+                colunas[j]
+                .replace(/\./g,"")
+                .replace(",",".")
+            ) || 0;
 
-let tabela = `
-<table>
-<tr>
-<th>Closer</th>
-`;
+            vendedores[nome] += valor;
+            totalVendido += valor;
 
-dados.forEach(d=>{
-tabela += `<th>${d.dia}</th>`;
-});
+            tabela += `
+                <td>
+                    ${valor.toLocaleString("pt-BR",{
+                        style:"currency",
+                        currency:"BRL"
+                    })}
+                </td>
+            `;
+        }
 
-tabela += "</tr>";
+        tabela += "</tr>";
+    }
 
-const nomes = ["Analu","Esterzinha","Julesco","Wes"];
+    tabela += "</table>";
 
-nomes.forEach((nome,linha)=>{
-tabela += `<tr><td>${nome}</td>`;
+    document.getElementById("tabela").innerHTML = tabela;
 
-dados.forEach(d=>{
-tabela += `<td>${d.valores[linha].toLocaleString('pt-BR',{
-style:'currency',
-currency:'BRL'
-})}</td>`;
-});
+    const falta = META - totalVendido;
+    const percentual = ((totalVendido / META) * 100).toFixed(2);
 
-tabela += "</tr>";
-});
+    document.getElementById("vendido").innerHTML =
+        totalVendido.toLocaleString("pt-BR",{
+            style:"currency",
+            currency:"BRL"
+        });
 
-tabela += "</table>";
+    document.getElementById("falta").innerHTML =
+        falta.toLocaleString("pt-BR",{
+            style:"currency",
+            currency:"BRL"
+        });
 
-document.getElementById("tabela").innerHTML =
-tabela;
+    document.getElementById("percentual").innerHTML =
+        percentual + "%";
+
+    document.getElementById("barra").style.width =
+        percentual + "%";
+
+    const ranking = Object.entries(vendedores)
+        .sort((a,b)=>b[1]-a[1]);
+
+    let rankingHtml = "";
+
+    ranking.forEach((v,index)=>{
+
+        const medalha =
+            index === 0 ? "🥇" :
+            index === 1 ? "🥈" :
+            index === 2 ? "🥉" : "🏅";
+
+        rankingHtml += `
+            <p>
+                ${medalha}
+                ${v[0]}
+                -
+                ${v[1].toLocaleString("pt-BR",{
+                    style:"currency",
+                    currency:"BRL"
+                })}
+            </p>
+        `;
+    });
+
+    document.getElementById("ranking").innerHTML =
+        rankingHtml;
+
+    const agora = new Date();
+
+    let ultimaAtualizacao =
+        agora.toLocaleString("pt-BR");
+
+    const el = document.getElementById("ultimaAtualizacao");
+
+    if(el){
+        el.innerHTML =
+        "Última atualização: " + ultimaAtualizacao;
+    }
+}
+
+carregarDados();
+
+setInterval(carregarDados, 300000);
+```
