@@ -6,6 +6,7 @@ async function carregarDados() {
   try {
     const response = await fetch(CSV_URL);
     const texto = await response.text();
+    console.log(texto);
 
     console.log("CSV carregado");
 
