@@ -9,6 +9,8 @@ async function carregarDados() {
 
         const linhas = texto.trim().split("\n");
 
+        console.log(linhas);
+
         if (linhas.length < 2) return;
 
         const cabecalho = linhas[0].split(",");
