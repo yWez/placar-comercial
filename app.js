@@ -3,9 +3,7 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzW
 const META = 250000;
 
 async function carregarDados() {
-try {
-
-```
+  try {
     const response = await fetch(CSV_URL);
     const texto = await response.text();
 
@@ -14,59 +12,56 @@ try {
     const linhas = texto.trim().split("\n");
 
     if (linhas.length < 2) {
-        console.error("CSV vazio");
-        return;
+      console.error("CSV vazio");
+      return;
     }
 
     const cabecalho = linhas[0].split(",");
     const dias = cabecalho.slice(1);
 
-    let totalVendido = 0;
     let vendedores = {};
+    let totalVendido = 0;
 
     let tabelaHtml = `
-    <table>
+      <table>
         <tr>
-            <th>Closer</th>
-            ${dias.map(d => `<th>${d}</th>`).join("")}
+          <th>Closer</th>
+          ${dias.map(d => `<th>${d}</th>`).join("")}
         </tr>
     `;
 
     for (let i = 1; i < linhas.length; i++) {
+      const colunas = linhas[i].split(",");
+      const nome = colunas[0]?.trim();
 
-        const colunas = linhas[i].split(",");
+      if (!nome) continue;
 
-        const nome = colunas[0]?.trim();
+      vendedores[nome] = 0;
 
-        if (!nome) continue;
+      tabelaHtml += `<tr><td>${nome}</td>`;
 
-        vendedores[nome] = 0;
+      for (let j = 1; j < colunas.length; j++) {
+        const valor =
+          Number(
+            (colunas[j] || "0")
+              .replace(/\./g, "")
+              .replace(",", ".")
+          ) || 0;
 
-        tabelaHtml += `<tr><td>${nome}</td>`;
+        vendedores[nome] += valor;
+        totalVendido += valor;
 
-        for (let j = 1; j < colunas.length; j++) {
+        tabelaHtml += `
+          <td>
+            ${valor.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL"
+            })}
+          </td>
+        `;
+      }
 
-            const valor =
-                Number(
-                    (colunas[j] || "0")
-                    .replace(/\./g, "")
-                    .replace(",", ".")
-                ) || 0;
-
-            vendedores[nome] += valor;
-            totalVendido += valor;
-
-            tabelaHtml += `
-                <td>
-                    ${valor.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL"
-                    })}
-                </td>
-            `;
-        }
-
-        tabelaHtml += "</tr>";
+      tabelaHtml += "</tr>";
     }
 
     tabelaHtml += "</table>";
@@ -78,63 +73,59 @@ try {
     const percentual = ((totalVendido / META) * 100).toFixed(2);
 
     document.getElementById("vendido").innerHTML =
-        totalVendido.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL"
-        });
+      totalVendido.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      });
 
     document.getElementById("falta").innerHTML =
-        falta.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL"
-        });
+      falta.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      });
 
     document.getElementById("percentual").innerHTML =
-        percentual + "%";
+      percentual + "%";
 
     document.getElementById("barra").style.width =
-        percentual + "%";
+      percentual + "%";
 
     const ranking = Object.entries(vendedores)
-        .sort((a, b) => b[1] - a[1]);
+      .sort((a, b) => b[1] - a[1]);
 
     let rankingHtml = "";
 
     ranking.forEach((v, index) => {
+      const medalha =
+        index === 0 ? "🥇" :
+        index === 1 ? "🥈" :
+        index === 2 ? "🥉" : "🏅";
 
-        const medalha =
-            index === 0 ? "🥇" :
-            index === 1 ? "🥈" :
-            index === 2 ? "🥉" : "🏅";
-
-        rankingHtml += `
-            <p>
-                ${medalha} ${v[0]} -
-                ${v[1].toLocaleString("pt-BR", {
-                    style: "currency",
-                    currency: "BRL"
-                })}
-            </p>
-        `;
+      rankingHtml += `
+        <p>
+          ${medalha} ${v[0]} -
+          ${v[1].toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL"
+          })}
+        </p>
+      `;
     });
 
-    document.getElementById("ranking").innerHTML =
-        rankingHtml;
+    document.getElementById("ranking").innerHTML = rankingHtml;
 
     const ultimaAtualizacao =
-        document.getElementById("ultimaAtualizacao");
+      document.getElementById("ultimaAtualizacao");
 
     if (ultimaAtualizacao) {
-        ultimaAtualizacao.innerHTML =
-            "Última atualização: " +
-            new Date().toLocaleString("pt-BR");
+      ultimaAtualizacao.innerHTML =
+        "Última atualização: " +
+        new Date().toLocaleString("pt-BR");
     }
 
-} catch (erro) {
+  } catch (erro) {
     console.error("ERRO GERAL:", erro);
-}
-```
-
+  }
 }
 
 carregarDados();
