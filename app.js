@@ -129,4 +129,3 @@ async function carregarDados() {
 carregarDados();
 
 setInterval(carregarDados, 300000);
-```
