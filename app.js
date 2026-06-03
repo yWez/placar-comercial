@@ -6,7 +6,6 @@ async function carregarDados() {
   try {
     const response = await fetch(CSV_URL);
     const texto = await response.text();
-    console.log(texto);
 
     console.log("CSV carregado");
 
@@ -43,11 +42,14 @@ async function carregarDados() {
 
       for (let j = 1; j < colunas.length; j++) {
         const valor =
-          Number(
-            (colunas[j] || "0")
-              .replace(/\./g, "")
-              .replace(",", ".")
-          ) || 0;
+  Number(
+    (colunas[j] || "0")
+      .replace(/R\$/g, "")
+      .replace(/"/g, "")
+      .replace(/\s/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
 
         vendedores[nome] += valor;
         totalVendido += valor;
@@ -125,7 +127,7 @@ async function carregarDados() {
     }
 
   } catch (erro) {
-    console.error("ERRO GERAL:", erro);
+    .error("ERRO GERAL:", erro);
   }
 }
 
