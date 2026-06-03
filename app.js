@@ -1,174 +1,142 @@
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1899560077&single=true&output=csv";
+const URL =
+"https://opensheet.elk.sh/1rx8Nd0koxXdCJ4_pZj26TiEwtnD1un4l8j1hqE2Fs3I/DASHBOARD";
+
+function moeda(valor) {
+    return valor.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+    });
+}
+
+function numero(valor) {
+
+    if (!valor) return 0;
+
+    return Number(
+        valor
+            .toString()
+            .replace(/\./g, "")
+            .replace(",", ".")
+    ) || 0;
+}
 
 async function carregarDados() {
 
     try {
 
-        const response = await fetch(CSV_URL);
-        const texto = await response.text();
+        const response = await fetch(URL);
 
-        const linhas = texto.trim().split("\n");
+        const dados = await response.json();
 
-        console.log(linhas);
+        console.log("JSON carregado:", dados);
 
-        if (linhas.length < 2) return;
-
-        const cabecalho = linhas[0].split(",");
-
-        const dias = cabecalho.slice(1);
+        if (!dados.length) return;
 
         let vendedores = {};
+
+        let totalMes = 0;
+        let meta = 0;
+        let faltando = 0;
+        let metaDia = 0;
+        let vendidoHoje = 0;
+
+        const hoje = new Date().getDate();
+        const colunaHoje =
+            hoje.toString().padStart(2, "0") + "/06";
 
         let tabelaHtml = `
         <table>
             <tr>
                 <th>Closer</th>
-                ${dias.map(d => `<th>${d}</th>`).join("")}
-            </tr>
         `;
 
-        let totalMes = 0;
-        let totalHoje = 0;
+        const dias = Object.keys(dados[0])
+            .filter(k => k !== "Closer");
 
-        for (let i = 1; i < linhas.length; i++) {
+        dias.forEach(d => {
+            tabelaHtml += `<th>${d}</th>`;
+        });
 
-            const colunas = linhas[i].split(",");
+        tabelaHtml += `</tr>`;
 
-            const nome = colunas[0]?.trim();
+        dados.forEach(linha => {
 
-            if (!nome) continue;
+            const nome = linha.Closer?.trim();
+
+            if (!nome) return;
 
             if (
                 nome === "Total Vendido/dia" ||
                 nome === "Total Vendido/mes" ||
                 nome === "Meta" ||
                 nome === "Faltando" ||
-                nome === "Dias Corridos" ||
                 nome === "Meta Diária"
             ) {
-                continue;
+
+                if (nome === "Total Vendido/mes") {
+                    totalMes = numero(linha["01/06"]);
+                }
+
+                if (nome === "Meta") {
+                    meta = numero(linha["01/06"]);
+                }
+
+                if (nome === "Faltando") {
+                    faltando = numero(linha["01/06"]);
+                }
+
+                if (nome === "Meta Diária") {
+                    metaDia = numero(linha["01/06"]);
+                }
+
+                if (
+                    nome === "Total Vendido/dia" &&
+                    linha[colunaHoje]
+                ) {
+                    vendidoHoje =
+                        numero(linha[colunaHoje]);
+                }
+
+                return;
             }
 
             vendedores[nome] = 0;
 
             tabelaHtml += `<tr><td>${nome}</td>`;
 
-            for (let j = 1; j < colunas.length; j++) {
+            dias.forEach(dia => {
 
-                let valor =
-                    Number(
-                        (colunas[j] || "0")
-                            .replace(/\./g, "")
-                            .replace(",", ".")
-                    ) || 0;
+                const valor =
+                    numero(linha[dia]);
 
                 vendedores[nome] += valor;
 
                 tabelaHtml += `
-                    <td>
-                        ${valor.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL"
-                        })}
-                    </td>
+                    <td>${moeda(valor)}</td>
                 `;
-            }
+            });
 
-            tabelaHtml += "</tr>";
-        }
+            tabelaHtml += `</tr>`;
+        });
 
-        tabelaHtml += "</table>";
+        tabelaHtml += `</table>`;
 
-        document.getElementById("tabela").innerHTML = tabelaHtml;
-
-        // LOCALIZA AS LINHAS ESPECIAIS
-
-        const linhaTotalDia =
-            linhas.find(l => l.startsWith("Total Vendido/dia"));
-
-        const linhaTotalMes =
-            linhas.find(l => l.startsWith("Total Vendido/mes"));
-
-        const linhaMeta =
-            linhas.find(l => l.startsWith("Meta"));
-
-        const linhaFaltando =
-            linhas.find(l => l.startsWith("Faltando"));
-
-        const linhaMetaDia =
-            linhas.find(l => l.startsWith("Meta Diária"));
-
-        function pegarPrimeiroNumero(linha) {
-
-            if (!linha) return 0;
-
-            const partes = linha.split(",");
-
-            const valor =
-                (partes[1] || "0") +
-                "," +
-                (partes[2] || "00");
-
-            return Number(
-                valor
-                    .replace(/\./g, "")
-                    .replace(",", ".")
-            ) || 0;
-        }
-
-        totalMes = pegarPrimeiroNumero(linhaTotalMes);
-
-        const meta = pegarPrimeiroNumero(linhaMeta);
-
-        const faltando = pegarPrimeiroNumero(linhaFaltando);
-
-        const metaDia = pegarPrimeiroNumero(linhaMetaDia);
-
-        // TOTAL DE HOJE
-
-        if (linhaTotalDia) {
-
-            const partes = linhaTotalDia.split(",");
-
-            const hojeColuna = new Date().getDate();
-
-            const indice = hojeColuna * 2 - 1;
-
-            const valorHoje =
-                (partes[indice] || "0") +
-                "," +
-                (partes[indice + 1] || "00");
-
-            totalHoje =
-                Number(
-                    valorHoje
-                        .replace(/\./g, "")
-                        .replace(",", ".")
-                ) || 0;
-        }
-
-        // CARDS
+        document.getElementById("tabela").innerHTML =
+            tabelaHtml;
 
         document.getElementById("meta").innerHTML =
-            meta.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL"
-            });
+            moeda(meta);
 
         document.getElementById("vendido").innerHTML =
-            totalMes.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL"
-            });
+            moeda(totalMes);
 
         document.getElementById("falta").innerHTML =
-            faltando.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL"
-            });
+            moeda(faltando);
 
         const percentual =
-            ((totalMes / meta) * 100).toFixed(2);
+            meta > 0
+                ? ((totalMes / meta) * 100).toFixed(2)
+                : 0;
 
         document.getElementById("percentual").innerHTML =
             percentual + "%";
@@ -176,32 +144,37 @@ async function carregarDados() {
         document.getElementById("barra").style.width =
             percentual + "%";
 
-        document.getElementById("hoje").innerHTML =
-            totalHoje.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL"
-            });
+        const cardHoje =
+            document.getElementById("hoje");
 
-        document.getElementById("metaDia").innerHTML =
-            metaDia.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL"
-            });
+        if (cardHoje) {
+            cardHoje.innerHTML =
+                moeda(vendidoHoje);
+        }
 
-        // LIDER
+        const cardMetaDia =
+            document.getElementById("metaDia");
+
+        if (cardMetaDia) {
+            cardMetaDia.innerHTML =
+                moeda(metaDia);
+        }
 
         const ranking = Object.entries(vendedores)
             .sort((a, b) => b[1] - a[1]);
 
-        const lider = ranking[0];
+        if (ranking.length > 0) {
 
-        document.getElementById("lider").innerHTML =
-            `🥇 ${lider[0]} - ${lider[1].toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL"
-            })}`;
+            const lider = ranking[0];
 
-        // RANKING
+            const liderEl =
+                document.getElementById("lider");
+
+            if (liderEl) {
+                liderEl.innerHTML =
+                    `🥇 ${lider[0]} - ${moeda(lider[1])}`;
+            }
+        }
 
         let rankingHtml = "";
 
@@ -210,17 +183,13 @@ async function carregarDados() {
             const medalha =
                 index === 0 ? "🥇" :
                 index === 1 ? "🥈" :
-                index === 2 ? "🥉" : "🏅";
+                index === 2 ? "🥉" :
+                "🏅";
 
             rankingHtml += `
                 <div class="ranking-card">
                     <h3>${medalha} ${v[0]}</h3>
-                    <p>
-                    ${v[1].toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL"
-                    })}
-                    </p>
+                    <p>${moeda(v[1])}</p>
                 </div>
             `;
         });
@@ -228,21 +197,39 @@ async function carregarDados() {
         document.getElementById("ranking").innerHTML =
             rankingHtml;
 
-        document.getElementById("qtdVendas").innerHTML =
-            "-";
+        const qtdVendas =
+            document.getElementById("qtdVendas");
 
-        document.getElementById("ultimaAtualizacao").innerHTML =
-            "Última atualização: " +
-            new Date().toLocaleString("pt-BR");
+        if (qtdVendas) {
+            qtdVendas.innerHTML = "-";
+        }
+
+        const ultimaAtualizacao =
+            document.getElementById(
+                "ultimaAtualizacao"
+            );
+
+        if (ultimaAtualizacao) {
+
+            ultimaAtualizacao.innerHTML =
+                "Última atualização: " +
+                new Date().toLocaleString(
+                    "pt-BR"
+                );
+        }
 
     } catch (erro) {
 
-        console.error("ERRO:", erro);
-
+        console.error(
+            "ERRO AO CARREGAR DASHBOARD:",
+            erro
+        );
     }
-
 }
 
 carregarDados();
 
-setInterval(carregarDados, 300000);
+setInterval(
+    carregarDados,
+    300000
+);
