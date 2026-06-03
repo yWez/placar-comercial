@@ -145,7 +145,7 @@ async function carregarDados() {
             percentual + "%";
 
         const cardHoje =
-            document.getElementById("hoje");
+            document.getElementById("Total Vendido/dia");
 
         if (cardHoje) {
             cardHoje.innerHTML =
