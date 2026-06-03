@@ -1,88 +1,55 @@
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1536459638&single=true&output=csv";
+const JSON_URL =
+"https://opensheet.elk.sh/1rx8Nd0koxXdCJ4_pZj26TiEwtnD1un4l8j1hqE2Fs3I/DASHBOARD";
 
-const META = 250000;
+function converterNumero(valor) {
+  if (!valor) return 0;
 
-async function carregarDados() {
-  try {
-    const response = await fetch(CSV_URL);
-    const texto = await response.text();
-
-    console.log("CSV carregado");
-
-    const linhas = texto.trim().split("\n");
-
-    if (linhas.length < 2) {
-      console.error("CSV vazio");
-      return;
-    }
-
-    const cabecalho = linhas[0].split(",");
-    const dias = cabecalho.slice(1);
-
-    let vendedores = {};
-    let totalVendido = 0;
-
-    let tabelaHtml = `
-      <table>
-        <tr>
-          <th>Closer</th>
-          ${dias.map(d => `<th>${d}</th>`).join("")}
-        </tr>
-    `;
-
-    for (let i = 1; i < linhas.length; i++) {
-      const colunas = linhas[i].split(",");
-      const nome = colunas[0]?.trim();
-
-      if (!nome) continue;
-
-      vendedores[nome] = 0;
-
-      tabelaHtml += `<tr><td>${nome}</td>`;
-
-      for (let j = 1; j < colunas.length; j++) {
-        const valor =
-  Number(
-    (colunas[j] || "0")
-      .replace(/R\$/g, "")
-      .replace(/"/g, "")
-      .replace(/\s/g, "")
+  return Number(
+    valor
+      .toString()
       .replace(/\./g, "")
       .replace(",", ".")
   ) || 0;
+}
 
-        vendedores[nome] += valor;
-        totalVendido += valor;
+async function carregarDados() {
 
-        tabelaHtml += `
-          <td>
-            ${valor.toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "BRL"
-            })}
-          </td>
-        `;
-      }
+  try {
 
-      tabelaHtml += "</tr>";
-    }
+    const response = await fetch(JSON_URL);
+    const dados = await response.json();
 
-    tabelaHtml += "</table>";
+    const vendedores = dados.filter(item =>
+      ["Analu","Esterzinha","Julesco","Wes"]
+      .includes(item.Closer)
+    );
 
-    const tabela = document.getElementById("tabela");
-    if (tabela) tabela.innerHTML = tabelaHtml;
+    const totalMes =
+      converterNumero(
+        dados.find(x => x.Closer === "Total Vendido/mes")?.["01/06"]
+      );
 
-    const falta = META - totalVendido;
-    const percentual = ((totalVendido / META) * 100).toFixed(2);
+    const meta =
+      converterNumero(
+        dados.find(x => x.Closer === "Meta")?.["01/06"]
+      );
+
+    const faltando =
+      converterNumero(
+        dados.find(x => x.Closer === "Faltando")?.["01/06"]
+      );
+
+    const percentual =
+      ((totalMes / meta) * 100).toFixed(2);
 
     document.getElementById("vendido").innerHTML =
-      totalVendido.toLocaleString("pt-BR", {
+      totalMes.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL"
       });
 
     document.getElementById("falta").innerHTML =
-      falta.toLocaleString("pt-BR", {
+      faltando.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL"
       });
@@ -93,12 +60,62 @@ async function carregarDados() {
     document.getElementById("barra").style.width =
       percentual + "%";
 
-    const ranking = Object.entries(vendedores)
-      .sort((a, b) => b[1] - a[1]);
+    const dias = Object.keys(vendedores[0])
+      .filter(k => k.includes("/"));
+
+    let tabelaHtml = `
+      <table>
+        <tr>
+          <th>Closer</th>
+          ${dias.map(d => `<th>${d}</th>`).join("")}
+        </tr>
+    `;
+
+    let ranking = [];
+
+    vendedores.forEach(vendedor => {
+
+      let totalCloser = 0;
+
+      tabelaHtml += `<tr><td>${vendedor.Closer}</td>`;
+
+      dias.forEach(dia => {
+
+        const valor =
+          converterNumero(vendedor[dia]);
+
+        totalCloser += valor;
+
+        tabelaHtml += `
+          <td>
+            ${valor.toLocaleString("pt-BR", {
+              style:"currency",
+              currency:"BRL"
+            })}
+          </td>
+        `;
+      });
+
+      tabelaHtml += "</tr>";
+
+      ranking.push({
+        nome: vendedor.Closer,
+        total: totalCloser
+      });
+
+    });
+
+    tabelaHtml += "</table>";
+
+    document.getElementById("tabela").innerHTML =
+      tabelaHtml;
+
+    ranking.sort((a,b) => b.total - a.total);
 
     let rankingHtml = "";
 
-    ranking.forEach((v, index) => {
+    ranking.forEach((v,index) => {
+
       const medalha =
         index === 0 ? "🥇" :
         index === 1 ? "🥈" :
@@ -106,16 +123,19 @@ async function carregarDados() {
 
       rankingHtml += `
         <p>
-          ${medalha} ${v[0]} -
-          ${v[1].toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL"
+          ${medalha}
+          ${v.nome}
+          -
+          ${v.total.toLocaleString("pt-BR", {
+            style:"currency",
+            currency:"BRL"
           })}
         </p>
       `;
     });
 
-    document.getElementById("ranking").innerHTML = rankingHtml;
+    document.getElementById("ranking").innerHTML =
+      rankingHtml;
 
     const ultimaAtualizacao =
       document.getElementById("ultimaAtualizacao");
@@ -126,9 +146,12 @@ async function carregarDados() {
         new Date().toLocaleString("pt-BR");
     }
 
-  } catch (erro) {
-    .error("ERRO GERAL:", erro);
+  } catch(err) {
+
+    console.error(err);
+
   }
+
 }
 
 carregarDados();
