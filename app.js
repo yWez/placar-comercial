@@ -1,24 +1,30 @@
-```javascript
-const CSV_URL =
-"https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1536459638&single=true&output=csv";
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1536459638&single=true&output=csv";
 
 const META = 250000;
 
 async function carregarDados() {
+try {
 
+```
     const response = await fetch(CSV_URL);
-    const csv = await response.text();
+    const texto = await response.text();
 
-    const linhas = csv.trim().split("\n");
+    console.log("CSV carregado");
+
+    const linhas = texto.trim().split("\n");
+
+    if (linhas.length < 2) {
+        console.error("CSV vazio");
+        return;
+    }
 
     const cabecalho = linhas[0].split(",");
-
     const dias = cabecalho.slice(1);
 
-    let vendedores = {};
     let totalVendido = 0;
+    let vendedores = {};
 
-    let tabela = `
+    let tabelaHtml = `
     <table>
         <tr>
             <th>Closer</th>
@@ -26,57 +32,61 @@ async function carregarDados() {
         </tr>
     `;
 
-    for(let i = 1; i < linhas.length; i++){
+    for (let i = 1; i < linhas.length; i++) {
 
         const colunas = linhas[i].split(",");
 
-        const nome = colunas[0];
+        const nome = colunas[0]?.trim();
+
+        if (!nome) continue;
 
         vendedores[nome] = 0;
 
-        tabela += `<tr><td>${nome}</td>`;
+        tabelaHtml += `<tr><td>${nome}</td>`;
 
-        for(let j = 1; j < colunas.length; j++){
+        for (let j = 1; j < colunas.length; j++) {
 
-            let valor = parseFloat(
-                colunas[j]
-                .replace(/\./g,"")
-                .replace(",",".")
-            ) || 0;
+            const valor =
+                Number(
+                    (colunas[j] || "0")
+                    .replace(/\./g, "")
+                    .replace(",", ".")
+                ) || 0;
 
             vendedores[nome] += valor;
             totalVendido += valor;
 
-            tabela += `
+            tabelaHtml += `
                 <td>
-                    ${valor.toLocaleString("pt-BR",{
-                        style:"currency",
-                        currency:"BRL"
+                    ${valor.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL"
                     })}
                 </td>
             `;
         }
 
-        tabela += "</tr>";
+        tabelaHtml += "</tr>";
     }
 
-    tabela += "</table>";
+    tabelaHtml += "</table>";
 
-    document.getElementById("tabela").innerHTML = tabela;
+    const tabela = document.getElementById("tabela");
+    if (tabela) tabela.innerHTML = tabelaHtml;
 
     const falta = META - totalVendido;
     const percentual = ((totalVendido / META) * 100).toFixed(2);
 
     document.getElementById("vendido").innerHTML =
-        totalVendido.toLocaleString("pt-BR",{
-            style:"currency",
-            currency:"BRL"
+        totalVendido.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL"
         });
 
     document.getElementById("falta").innerHTML =
-        falta.toLocaleString("pt-BR",{
-            style:"currency",
-            currency:"BRL"
+        falta.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL"
         });
 
     document.getElementById("percentual").innerHTML =
@@ -86,11 +96,11 @@ async function carregarDados() {
         percentual + "%";
 
     const ranking = Object.entries(vendedores)
-        .sort((a,b)=>b[1]-a[1]);
+        .sort((a, b) => b[1] - a[1]);
 
     let rankingHtml = "";
 
-    ranking.forEach((v,index)=>{
+    ranking.forEach((v, index) => {
 
         const medalha =
             index === 0 ? "🥇" :
@@ -99,12 +109,10 @@ async function carregarDados() {
 
         rankingHtml += `
             <p>
-                ${medalha}
-                ${v[0]}
-                -
-                ${v[1].toLocaleString("pt-BR",{
-                    style:"currency",
-                    currency:"BRL"
+                ${medalha} ${v[0]} -
+                ${v[1].toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL"
                 })}
             </p>
         `;
@@ -113,17 +121,20 @@ async function carregarDados() {
     document.getElementById("ranking").innerHTML =
         rankingHtml;
 
-    const agora = new Date();
+    const ultimaAtualizacao =
+        document.getElementById("ultimaAtualizacao");
 
-    let ultimaAtualizacao =
-        agora.toLocaleString("pt-BR");
-
-    const el = document.getElementById("ultimaAtualizacao");
-
-    if(el){
-        el.innerHTML =
-        "Última atualização: " + ultimaAtualizacao;
+    if (ultimaAtualizacao) {
+        ultimaAtualizacao.innerHTML =
+            "Última atualização: " +
+            new Date().toLocaleString("pt-BR");
     }
+
+} catch (erro) {
+    console.error("ERRO GERAL:", erro);
+}
+```
+
 }
 
 carregarDados();
