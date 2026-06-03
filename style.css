@@ -1,6 +1,6 @@
 body{
     font-family:Arial,sans-serif;
-    background:#f5f7fa;
+   background:#eef2f7;
     margin:0;
     padding:20px;
 }
@@ -15,8 +15,14 @@ body{
     color:#666;
 }
 
-h1,h2{
-    text-align:center;
+h1{
+font-size:48px;
+margin-bottom:30px;
+}
+
+h2{
+margin:40px 0 20px;
+font-size:36px;
 }
 
 .cards{
@@ -27,11 +33,17 @@ h1,h2{
 }
 
 .card{
-    background:white;
-    padding:15px;
-    border-radius:12px;
-    box-shadow:0 2px 10px rgba(0,0,0,.08);
-    text-align:center;
+background:white;
+padding:25px;
+border-radius:20px;
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+text-align:center;
+transition:.3s;
+border-top:5px solid #3b82f6;
+}
+
+.card:hover{
+transform:translateY(-5px);
 }
 
 .card h3{
