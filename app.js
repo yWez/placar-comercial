@@ -167,8 +167,11 @@ async function carregarDados() {
 
             const lider = ranking[0];
 
-            const liderEl =
-                document.getElementById("lider");
+document.getElementById("liderMes").innerHTML =
+`🥇 ${lider[0]} - ${lider[1].toLocaleString("pt-BR",{
+style:"currency",
+currency:"BRL"
+})}`;
 
             if (liderEl) {
                 liderEl.innerHTML =
@@ -186,12 +189,15 @@ async function carregarDados() {
                 index === 2 ? "🥉" :
                 "🏅";
 
-            rankingHtml += `
-                <div class="ranking-card">
-                    <h3>${medalha} ${v[0]}</h3>
-                    <p>${moeda(v[1])}</p>
-                </div>
-            `;
+           rankingHtml += `
+<div class="ranking-card">
+<h3>${medalha} ${v[0]}</h3>
+<p>${v[1].toLocaleString("pt-BR",{
+style:"currency",
+currency:"BRL"
+})}</p>
+</div>
+`;
         });
 
         document.getElementById("ranking").innerHTML =
