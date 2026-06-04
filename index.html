@@ -1,82 +1,107 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Placar Comercial</title>
-
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placar Comercial</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
 
-    <div class="container">
-
-        <p id="ultimaAtualizacao"></p>
-
-        <h1>🏆 Placar Comercial</h1>
-
-        <div class="cards">
-
-            <div class="card">
-                <h3>🎯 Meta</h3>
-                <p id="meta">R$ 250.000</p>
-            </div>
-
-            <div class="card">
-                <h3>💰 Vendido</h3>
-                <p id="vendido">R$ 0</p>
-            </div>
-
-            <div class="card">
-                <h3>🚀 Falta</h3>
-                <p id="falta">R$ 0</p>
-            </div>
-
-            <div class="card">
-                <h3>📈 Atingido</h3>
-                <p id="percentual">0%</p>
-            </div>
-
-            <div class="card">
-                <h3>🔥 Hoje</h3>
-                <p id="hoje">R$ 0</p>
-            </div>
-
-            <div class="card">
-                <h3>🎯 Meta Dia</h3>
-                <p id="metaDia">R$ 0</p>
-            </div>
-
-            <div class="card">
-                <h3>🛒 Vendas</h3>
-                <p id="qtdVendas">0</p>
-            </div>
-
-        </div>
-
-        <div class="progress">
-            <div id="barra"></div>
-        </div>
-
-      <div class="lider-box">
-    <h2>🏆 Líder do Mês</h2>
-    <h1 id="liderMes">Carregando...</h1>
-</div>
-
-        <h2>🏅 Ranking</h2>
-
-        <div id="ranking"></div>
-
-        <h2>📅 Vendas por Dia</h2>
-
-        <div id="tabela"></div>
-
+  <div class="topbar">
+    <div class="brand-box">
+      <h1>🏆 Placar Comercial</h1>
+      <p>Performance do time comercial</p>
     </div>
 
-    <script src="app.js"></script>
+    <div class="topbar-info">
+      <div class="info-chip">
+        <span class="info-label">Mês</span>
+        <strong id="mesAtual">-</strong>
+      </div>
 
+      <div class="info-chip">
+        <span class="info-label">Dias restantes</span>
+        <strong id="diasRestantes">-</strong>
+      </div>
+
+      <div class="info-chip">
+        <span class="info-label">Atualizado</span>
+        <strong id="ultimaAtualizacao">-</strong>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+
+    <section class="cards-grid">
+      <div class="kpi-card blue">
+        <span class="kpi-title">🎯 Meta</span>
+        <h2 id="meta">R$ 0,00</h2>
+      </div>
+
+      <div class="kpi-card green">
+        <span class="kpi-title">💰 Vendido</span>
+        <h2 id="vendido">R$ 0,00</h2>
+      </div>
+
+      <div class="kpi-card orange">
+        <span class="kpi-title">🚀 Falta</span>
+        <h2 id="falta">R$ 0,00</h2>
+      </div>
+
+      <div class="kpi-card purple">
+        <span class="kpi-title">📈 Atingido</span>
+        <h2 id="percentual">0%</h2>
+      </div>
+
+      <div class="kpi-card red">
+        <span class="kpi-title">🔥 Hoje</span>
+        <h2 id="hoje">R$ 0,00</h2>
+      </div>
+
+      <div class="kpi-card cyan">
+        <span class="kpi-title">🎯 Meta Dia</span>
+        <h2 id="metaDia">R$ 0,00</h2>
+      </div>
+    </section>
+
+    <section class="progress-card">
+      <div class="progress-header">
+        <span>Progresso da meta</span>
+        <strong id="percentualBarra">0%</strong>
+      </div>
+
+      <div class="progress-track">
+        <div id="barra"></div>
+      </div>
+    </section>
+
+    <section class="leader-card">
+      <div class="section-title">
+        <h3>🏆 Líder do mês</h3>
+      </div>
+      <div id="liderMes" class="leader-content">
+        <span>Carregando...</span>
+      </div>
+    </section>
+
+    <section class="ranking-section">
+      <div class="section-title">
+        <h3>🏅 Ranking</h3>
+      </div>
+      <div id="ranking" class="ranking-grid"></div>
+    </section>
+
+    <section class="table-section">
+      <div class="section-title">
+        <h3>📅 Vendas por dia</h3>
+      </div>
+      <div class="table-wrap" id="tabela"></div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
 </body>
-
 </html>
