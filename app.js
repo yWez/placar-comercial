@@ -8,6 +8,8 @@ const LINHAS_RESUMO = [
   "Meta Diária"
 ];
 
+let receitaChart = null;
+
 function parseValorBR(valor) {
   if (valor === null || valor === undefined) return 0;
 
@@ -35,19 +37,13 @@ function capitalizar(texto) {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-function pegarDiasDoMes() {
-  const hoje = new Date();
-  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
-  return ultimoDia;
-}
-
 function pegarDiasRestantes() {
   const hoje = new Date();
   const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
-  return ultimoDia - hoje.getDate();
+  return Math.max(ultimoDia - hoje.getDate(), 0);
 }
 
-function atualizarInfosTopo() {
+function atualizarTopo() {
   const agora = new Date();
 
   const mesAtual = capitalizar(
@@ -69,22 +65,20 @@ async function carregarDados() {
     const dados = await response.json();
 
     if (!Array.isArray(dados) || !dados.length) {
-      console.error("Sem dados na planilha.");
+      console.error("Nenhum dado encontrado.");
       return;
     }
 
-    atualizarInfosTopo();
+    atualizarTopo();
 
-    const todasColunas = Object.keys(dados[0]);
-    const dias = todasColunas.filter(coluna => /^\d{2}\/\d{2}$/.test(coluna));
+    const dias = Object.keys(dados[0])
+      .filter(coluna => /^\d{2}\/\d{2}$/.test(coluna));
 
-    const buscarLinha = (nome) => {
-      return dados.find(item => (item.Closer || "").trim() === nome);
-    };
+    const buscarLinha = nome =>
+      dados.find(item => (item.Closer || "").trim() === nome);
 
     const linhaTotalDia = buscarLinha("Total Vendido/dia") || {};
     const linhaMeta = buscarLinha("Meta") || {};
-    const linhaFaltando = buscarLinha("Faltando") || {};
     const linhaMetaDia = buscarLinha("Meta Diária") || {};
 
     const vendedores = dados.filter(item => {
@@ -101,28 +95,27 @@ async function carregarDados() {
         total += parseValorBR(vendedor[dia]);
       });
 
-      return {
-        nome,
-        total
-      };
+      return { nome, total };
     }).sort((a, b) => b.total - a.total);
 
     const totalVendido = ranking.reduce((acc, item) => acc + item.total, 0);
+
     const meta = parseValorBR(linhaMeta[dias[0]]);
-    const falta = meta > 0 ? meta - totalVendido : parseValorBR(linhaFaltando[dias[0]]);
+    const falta = Math.max(meta - totalVendido, 0);
     const metaDia = parseValorBR(linhaMetaDia[dias[0]]);
     const percentual = meta > 0 ? (totalVendido / meta) * 100 : 0;
 
     let ultimoDiaComVenda = null;
 
     dias.forEach(dia => {
-      const valor = parseValorBR(linhaTotalDia[dia]);
-      if (valor > 0) {
+      const valorDia = parseValorBR(linhaTotalDia[dia]);
+
+      if (valorDia > 0) {
         ultimoDiaComVenda = dia;
       }
     });
 
-    const valorHoje = ultimoDiaComVenda
+    const valorUltimoDia = ultimoDiaComVenda
       ? parseValorBR(linhaTotalDia[ultimoDiaComVenda])
       : 0;
 
@@ -131,25 +124,26 @@ async function carregarDados() {
     document.getElementById("falta").textContent = formatarMoeda(falta);
     document.getElementById("percentual").textContent = `${percentual.toFixed(2)}%`;
     document.getElementById("percentualBarra").textContent = `${percentual.toFixed(2)}%`;
-    document.getElementById("hoje").textContent = formatarMoeda(valorHoje);
+    document.getElementById("hoje").textContent = formatarMoeda(valorUltimoDia);
     document.getElementById("metaDia").textContent = formatarMoeda(metaDia);
     document.getElementById("barra").style.width = `${Math.min(percentual, 100)}%`;
 
     renderizarLider(ranking);
     renderizarRanking(ranking);
     renderizarTabela(vendedores, dias, linhaTotalDia);
+    renderizarGrafico(dias, linhaTotalDia, meta);
 
   } catch (erro) {
-    console.error("Erro ao carregar dados:", erro);
+    console.error("Erro ao carregar dashboard:", erro);
   }
 }
 
 function renderizarLider(ranking) {
-  const lider = ranking[0];
   const box = document.getElementById("liderMes");
+  const lider = ranking[0];
 
   if (!lider) {
-    box.innerHTML = `<span>Nenhum dado disponível.</span>`;
+    box.innerHTML = "Nenhum dado disponível.";
     return;
   }
 
@@ -217,6 +211,95 @@ function renderizarTabela(vendedores, dias, linhaTotalDia) {
   `;
 
   tabelaBox.innerHTML = html;
+}
+
+function renderizarGrafico(dias, linhaTotalDia, meta) {
+  const canvas = document.getElementById("receitaChart");
+
+  if (!canvas || typeof Chart === "undefined") return;
+
+  let acumulado = 0;
+
+  const realizadoAcumulado = dias.map(dia => {
+    acumulado += parseValorBR(linhaTotalDia[dia]);
+    return acumulado;
+  });
+
+  const metaDiariaIdeal = meta / dias.length;
+
+  const metaIdeal = dias.map((_, index) => {
+    return metaDiariaIdeal * (index + 1);
+  });
+
+  if (receitaChart) {
+    receitaChart.destroy();
+  }
+
+  receitaChart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels: dias,
+      datasets: [
+        {
+          label: "Realizado",
+          data: realizadoAcumulado,
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59,130,246,.12)",
+          borderWidth: 3,
+          tension: .35,
+          fill: true,
+          pointRadius: 4
+        },
+        {
+          label: "Meta ideal",
+          data: metaIdeal,
+          borderColor: "#ef4444",
+          borderWidth: 2,
+          borderDash: [8, 6],
+          tension: .25,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: "#334155",
+            font: {
+              size: 12,
+              weight: "700"
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: "#64748b",
+            maxRotation: 45,
+            minRotation: 45
+          },
+          grid: {
+            color: "rgba(148,163,184,.18)"
+          }
+        },
+        y: {
+          ticks: {
+            color: "#64748b",
+            callback: value => {
+              return "R$ " + Number(value).toLocaleString("pt-BR");
+            }
+          },
+          grid: {
+            color: "rgba(148,163,184,.22)"
+          }
+        }
+      }
+    }
+  });
 }
 
 carregarDados();
