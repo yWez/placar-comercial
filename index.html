@@ -6,64 +6,67 @@
   <title>Placar Comercial</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-  <div class="topbar">
-    <div class="brand-box">
+  <header class="topbar">
+    <div class="brand">
       <h1>🏆 Placar Comercial</h1>
       <p>Performance do time comercial</p>
     </div>
 
     <div class="topbar-info">
       <div class="info-chip">
-        <span class="info-label">Mês</span>
+        <span>Mês</span>
         <strong id="mesAtual">-</strong>
       </div>
 
       <div class="info-chip">
-        <span class="info-label">Dias restantes</span>
+        <span>Dias restantes</span>
         <strong id="diasRestantes">-</strong>
       </div>
 
       <div class="info-chip">
-        <span class="info-label">Atualizado</span>
+        <span>Atualizado</span>
         <strong id="ultimaAtualizacao">-</strong>
       </div>
     </div>
-  </div>
+  </header>
 
   <main class="container">
 
-    <section class="cards-grid">
-      <div class="kpi-card blue">
-        <span class="kpi-title">🎯 Meta</span>
+    <section class="kpi-grid">
+
+      <div class="kpi-card kpi-blue">
+        <span>Meta</span>
         <h2 id="meta">R$ 0,00</h2>
       </div>
 
-      <div class="kpi-card green">
-        <span class="kpi-title">💰 Vendido</span>
+      <div class="kpi-card kpi-green">
+        <span>Vendido</span>
         <h2 id="vendido">R$ 0,00</h2>
       </div>
 
-      <div class="kpi-card orange">
-        <span class="kpi-title">🚀 Falta</span>
+      <div class="kpi-card kpi-orange">
+        <span>Falta</span>
         <h2 id="falta">R$ 0,00</h2>
       </div>
 
-      <div class="kpi-card purple">
-        <span class="kpi-title">📈 Atingido</span>
+      <div class="kpi-card kpi-purple">
+        <span>Atingido</span>
         <h2 id="percentual">0%</h2>
       </div>
 
-      <div class="kpi-card red">
-        <span class="kpi-title">🔥 Hoje</span>
+      <div class="kpi-card kpi-red">
+        <span>Último dia vendido</span>
         <h2 id="hoje">R$ 0,00</h2>
       </div>
 
-      <div class="kpi-card cyan">
-        <span class="kpi-title">🎯 Meta Dia</span>
+      <div class="kpi-card kpi-cyan">
+        <span>Meta diária</span>
         <h2 id="metaDia">R$ 0,00</h2>
       </div>
+
     </section>
 
     <section class="progress-card">
@@ -81,8 +84,19 @@
       <div class="section-title">
         <h3>🏆 Líder do mês</h3>
       </div>
+
       <div id="liderMes" class="leader-content">
-        <span>Carregando...</span>
+        Carregando...
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <div class="section-title">
+        <h3>📈 Receita acumulada</h3>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="receitaChart"></canvas>
       </div>
     </section>
 
@@ -90,6 +104,7 @@
       <div class="section-title">
         <h3>🏅 Ranking</h3>
       </div>
+
       <div id="ranking" class="ranking-grid"></div>
     </section>
 
@@ -97,11 +112,14 @@
       <div class="section-title">
         <h3>📅 Vendas por dia</h3>
       </div>
-      <div class="table-wrap" id="tabela"></div>
+
+      <div id="tabela" class="table-wrap"></div>
     </section>
 
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
+
 </body>
 </html>
