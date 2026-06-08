@@ -71,8 +71,17 @@ async function carregarDados() {
 
     atualizarTopo();
 
-    const dias = Object.keys(dados[0])
-      .filter(coluna => /^\d{2}\/\d{2}$/.test(coluna));
+    const dias = [...new Set(
+  dados.flatMap(item => Object.keys(item))
+)]
+  .filter(coluna => /^\d{2}\/\d{2}$/.test(coluna))
+  .sort((a, b) => {
+    const [diaA, mesA] = a.split("/").map(Number);
+    const [diaB, mesB] = b.split("/").map(Number);
+
+    if (mesA !== mesB) return mesA - mesB;
+    return diaA - diaB;
+  });
 
     const buscarLinha = nome =>
       dados.find(item => (item.Closer || "").trim() === nome);
