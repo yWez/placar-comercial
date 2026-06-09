@@ -624,3 +624,98 @@ tbody tr:nth-child(even):not(.total-row) td:first-child{
     width:100%;
   }
 }
+
+/* =========================
+   COMPARATIVO ENTRE SEMANAS
+========================= */
+
+.comparativo-semanas,
+.melhores-semanas{
+  margin:18px 0 20px;
+}
+
+.comparativo-box,
+.melhores-box{
+  background:linear-gradient(135deg,#f8fbff,#eef6ff);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:18px;
+}
+
+.comparativo-box h4,
+.melhores-box h4{
+  font-size:18px;
+  font-weight:900;
+  color:var(--text);
+  margin-bottom:14px;
+}
+
+.comparativo-grid,
+.melhores-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+
+.comparativo-card,
+.melhor-card{
+  background:white;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:15px;
+  box-shadow:0 8px 18px rgba(15,23,42,.04);
+}
+
+.comparativo-card span,
+.melhor-card span{
+  display:block;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  font-weight:800;
+  color:var(--muted);
+  margin-bottom:8px;
+}
+
+.comparativo-card strong,
+.melhor-card strong{
+  display:block;
+  font-size:22px;
+  font-weight:900;
+  color:var(--text);
+}
+
+.comparativo-card small,
+.melhor-card small{
+  display:block;
+  margin-top:6px;
+  font-size:13px;
+  font-weight:800;
+  color:var(--muted);
+}
+
+.delta-up{
+  color:#16a34a !important;
+}
+
+.delta-down{
+  color:#ef4444 !important;
+}
+
+.delta-neutral{
+  color:var(--muted) !important;
+}
+
+@media(max-width:1000px){
+  .comparativo-grid,
+  .melhores-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:560px){
+  .comparativo-grid,
+  .melhores-grid{
+    grid-template-columns:1fr;
+  }
+}
