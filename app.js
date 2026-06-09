@@ -645,47 +645,163 @@ async function carregarDisparos() {
 
 function renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada) {
   const box = document.getElementById("tabelaDisparos");
-
   if (!box) return;
 
-  const mostrarSemana = semanaSelecionada === "TODOS";
+  // quando filtra uma semana só, mantém mais simples
+  if (semanaSelecionada !== "TODOS") {
+    const linhaTotal = dadosFiltrados.find(ehLinhaTotalDisparos);
+    const closers = dadosFiltrados.filter(item => !ehLinhaTotalDisparos(item));
 
-  let html = `
-    <table class="disparos-table">
-      <thead>
-        <tr>
-          ${mostrarSemana ? `<th>Semana</th>` : ""}
-          <th>Closer</th>
-          <th>Positivos</th>
-          <th>Negativos</th>
-          <th>Conectados</th>
-          <th>Vendas</th>
-          <th>Conversão</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+    let html = "";
 
-  dadosFiltrados.forEach(item => {
-    const total = ehLinhaTotalDisparos(item);
+    if (linhaTotal) {
+      html += `
+        <div class="resumo-semana-card">
+          <div class="resumo-semana-topo">
+            <h4>📊 Resumo geral da ${"Semana " + linhaTotal.Semana}</h4>
+            <span class="badge-geral">Time Comercial</span>
+          </div>
+
+          <div class="resumo-semana-grid">
+            <div class="mini-card">
+              <span>Positivos</span>
+              <strong>${parseInteiro(linhaTotal.Positivo).toLocaleString("pt-BR")}</strong>
+            </div>
+
+            <div class="mini-card">
+              <span>Negativos</span>
+              <strong>${parseInteiro(linhaTotal.Negativo).toLocaleString("pt-BR")}</strong>
+            </div>
+
+            <div class="mini-card">
+              <span>Conectados</span>
+              <strong>${parseInteiro(linhaTotal.Conectados).toLocaleString("pt-BR")}</strong>
+            </div>
+
+            <div class="mini-card destaque">
+              <span>Vendas do Time</span>
+              <strong>${parseInteiro(linhaTotal.Vendas).toLocaleString("pt-BR")}</strong>
+            </div>
+
+            <div class="mini-card destaque">
+              <span>Conversão Geral</span>
+              <strong>${parsePercentual(linhaTotal.Conversao).toFixed(2)}%</strong>
+            </div>
+          </div>
+        </div>
+      `;
+    }
 
     html += `
-      <tr class="${total ? "total-disparos" : ""}">
-        ${mostrarSemana ? `<td>Semana ${item.Semana}</td>` : ""}
-        <td>${item.Closer}</td>
-        <td>${parseInteiro(item.Positivo)}</td>
-        <td>${parseInteiro(item.Negativo)}</td>
-        <td>${parseInteiro(item.Conectados)}</td>
-        <td>${parseInteiro(item.Vendas)}</td>
-        <td>${parsePercentual(item.Conversao).toFixed(2)}%</td>
-      </tr>
+      <table class="disparos-table">
+        <thead>
+          <tr>
+            <th>Closer</th>
+            <th>Positivos</th>
+            <th>Negativos</th>
+            <th>Conectados</th>
+            <th>Vendas</th>
+            <th>Conversão</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${closers.map(item => `
+            <tr>
+              <td><strong>${item.Closer}</strong></td>
+              <td>${parseInteiro(item.Positivo).toLocaleString("pt-BR")}</td>
+              <td>${parseInteiro(item.Negativo).toLocaleString("pt-BR")}</td>
+              <td>${parseInteiro(item.Conectados).toLocaleString("pt-BR")}</td>
+              <td>${parseInteiro(item.Vendas).toLocaleString("pt-BR")}</td>
+              <td>${parsePercentual(item.Conversao).toFixed(2)}%</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+    box.innerHTML = html;
+    return;
+  }
+
+  // MODO TODOS
+  const semanas = [...new Set(dadosFiltrados.map(item => item.Semana))].sort((a, b) => Number(a) - Number(b));
+
+  let html = `<div class="blocos-semanas">`;
+
+  semanas.forEach(semana => {
+    const dadosSemana = dadosFiltrados.filter(item => String(item.Semana) === String(semana));
+    const linhaTotal = dadosSemana.find(ehLinhaTotalDisparos);
+    const closers = dadosSemana.filter(item => !ehLinhaTotalDisparos(item));
+
+    html += `
+      <div class="semana-bloco">
+        <div class="semana-header">
+          <h3>Semana ${semana}</h3>
+          <span class="badge-semana">Visão geral do time</span>
+        </div>
+    `;
+
+    if (linhaTotal) {
+      html += `
+        <div class="resumo-semana-grid">
+          <div class="mini-card">
+            <span>Positivos</span>
+            <strong>${parseInteiro(linhaTotal.Positivo).toLocaleString("pt-BR")}</strong>
+          </div>
+
+          <div class="mini-card">
+            <span>Negativos</span>
+            <strong>${parseInteiro(linhaTotal.Negativo).toLocaleString("pt-BR")}</strong>
+          </div>
+
+          <div class="mini-card">
+            <span>Conectados</span>
+            <strong>${parseInteiro(linhaTotal.Conectados).toLocaleString("pt-BR")}</strong>
+          </div>
+
+          <div class="mini-card destaque">
+            <span>Vendas do Time</span>
+            <strong>${parseInteiro(linhaTotal.Vendas).toLocaleString("pt-BR")}</strong>
+          </div>
+
+          <div class="mini-card destaque">
+            <span>Conversão Geral</span>
+            <strong>${parsePercentual(linhaTotal.Conversao).toFixed(2)}%</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    html += `
+        <table class="disparos-table">
+          <thead>
+            <tr>
+              <th>Closer</th>
+              <th>Positivos</th>
+              <th>Negativos</th>
+              <th>Conectados</th>
+              <th>Vendas</th>
+              <th>Conversão</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${closers.map(item => `
+              <tr>
+                <td><strong>${item.Closer}</strong></td>
+                <td>${parseInteiro(item.Positivo).toLocaleString("pt-BR")}</td>
+                <td>${parseInteiro(item.Negativo).toLocaleString("pt-BR")}</td>
+                <td>${parseInteiro(item.Conectados).toLocaleString("pt-BR")}</td>
+                <td>${parseInteiro(item.Vendas).toLocaleString("pt-BR")}</td>
+                <td>${parsePercentual(item.Conversao).toFixed(2)}%</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
     `;
   });
 
-  html += `
-      </tbody>
-    </table>
-  `;
+  html += `</div>`;
 
   box.innerHTML = html;
 }
