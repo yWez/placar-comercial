@@ -496,6 +496,359 @@ function parseInteiro(valor) {
   ) || 0;
 }
 
+function ehLinhaTotalDisparos(item) {
+  const nome = (item.Closer || "").trim().toLowerCase();
+  return nome.includes("time") || nome === "total";
+}
+
+function resumirDadosDisparos(lista) {
+  const total = lista.find(ehLinhaTotalDisparos);
+
+  const closers = lista.filter(item => {
+    const nome = (item.Closer || "").trim();
+    return nome && !ehLinhaTotalDisparos(item);
+  });
+
+  const positivo = total
+    ? parseInteiro(total.Positivo)
+    : closers.reduce((acc, item) => acc + parseInteiro(item.Positivo), 0);
+
+  const negativo = total
+    ? parseInteiro(total.Negativo)
+    : closers.reduce((acc, item) => acc + parseInteiro(item.Negativo), 0);
+
+  const conectados = total
+    ? parseInteiro(total.Conectados)
+    : closers.reduce((acc, item) => acc + parseInteiro(item.Conectados), 0);
+
+  const vendas = total
+    ? parseInteiro(total.Vendas)
+    : closers.reduce((acc, item) => acc + parseInteiro(item.Vendas), 0);
+
+  const conversao = conectados > 0
+    ? (vendas / conectados) * 100
+    : 0;
+
+  return {
+    positivo,
+    negativo,
+    conectados,
+    vendas,
+    conversao
+  };
+}
+
+async function carregarDisparos() {
+  try {
+    const response = await fetch(URL_DISPAROS);
+    const dados = await response.json();
+
+    if (!Array.isArray(dados) || !dados.length) {
+      console.warn("Nenhum dado de disparos encontrado.");
+      return;
+    }
+
+    const semanas = [...new Set(
+      dados
+        .map(item => String(item.Semana || "").trim())
+        .filter(Boolean)
+    )].sort((a, b) => Number(a) - Number(b));
+
+    const selectSemana = document.getElementById("filtroSemanaDisparos");
+
+    if (selectSemana && semanas.length) {
+      const valorAtual = selectSemana.value || "TODOS";
+
+      selectSemana.innerHTML = `
+        <option value="TODOS">Todos</option>
+        ${semanas.map(semana => {
+          return `<option value="${semana}">Semana ${semana}</option>`;
+        }).join("")}
+      `;
+
+      selectSemana.value =
+        valorAtual === "TODOS" || semanas.includes(valorAtual)
+          ? valorAtual
+          : "TODOS";
+
+      selectSemana.onchange = carregarDisparos;
+    }
+
+    const semanaSelecionada = selectSemana?.value || "TODOS";
+
+    const dadosFiltrados = semanaSelecionada === "TODOS"
+      ? dados
+      : dados.filter(item => {
+          return String(item.Semana || "").trim() === String(semanaSelecionada);
+        });
+
+    const closersFiltrados = dadosFiltrados.filter(item => {
+      const nome = (item.Closer || "").trim();
+      return nome && !ehLinhaTotalDisparos(item);
+    });
+
+    const resumo = resumirDadosDisparos(dadosFiltrados);
+
+    const melhor = [...closersFiltrados].sort((a, b) => {
+      const convA = parsePercentual(a.Conversao);
+      const convB = parsePercentual(b.Conversao);
+
+      if (convB !== convA) return convB - convA;
+
+      return parseInteiro(b.Vendas) - parseInteiro(a.Vendas);
+    })[0];
+
+    const melhorTexto = melhor
+      ? `${melhor.Closer} • ${parsePercentual(melhor.Conversao).toFixed(2)}%`
+      : "-";
+
+    document.getElementById("disparosConectados").textContent =
+      resumo.conectados.toLocaleString("pt-BR");
+
+    document.getElementById("disparosVendas").textContent =
+      resumo.vendas.toLocaleString("pt-BR");
+
+    document.getElementById("disparosConversao").textContent =
+      `${resumo.conversao.toFixed(2)}%`;
+
+    document.getElementById("disparosMelhor").textContent =
+      melhorTexto;
+
+    renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada);
+    renderizarComparativoSemanas(dados, semanas, semanaSelecionada);
+    renderizarMelhoresSemanasPorCloser(dados);
+
+  } catch (erro) {
+    console.error("Erro ao carregar disparos:", erro);
+  }
+}
+
+function renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada) {
+  const box = document.getElementById("tabelaDisparos");
+
+  if (!box) return;
+
+  const mostrarSemana = semanaSelecionada === "TODOS";
+
+  let html = `
+    <table class="disparos-table">
+      <thead>
+        <tr>
+          ${mostrarSemana ? `<th>Semana</th>` : ""}
+          <th>Closer</th>
+          <th>Positivos</th>
+          <th>Negativos</th>
+          <th>Conectados</th>
+          <th>Vendas</th>
+          <th>Conversão</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  dadosFiltrados.forEach(item => {
+    const total = ehLinhaTotalDisparos(item);
+
+    html += `
+      <tr class="${total ? "total-disparos" : ""}">
+        ${mostrarSemana ? `<td>Semana ${item.Semana}</td>` : ""}
+        <td>${item.Closer}</td>
+        <td>${parseInteiro(item.Positivo)}</td>
+        <td>${parseInteiro(item.Negativo)}</td>
+        <td>${parseInteiro(item.Conectados)}</td>
+        <td>${parseInteiro(item.Vendas)}</td>
+        <td>${parsePercentual(item.Conversao).toFixed(2)}%</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  box.innerHTML = html;
+}
+
+function formatarDeltaNumero(valor) {
+  if (valor > 0) return `+${valor.toLocaleString("pt-BR")}`;
+  if (valor < 0) return valor.toLocaleString("pt-BR");
+  return "0";
+}
+
+function formatarDeltaPercentual(valor) {
+  if (valor > 0) return `+${valor.toFixed(2)} p.p.`;
+  if (valor < 0) return `${valor.toFixed(2)} p.p.`;
+  return "0,00 p.p.";
+}
+
+function classeDelta(valor) {
+  if (valor > 0) return "delta-up";
+  if (valor < 0) return "delta-down";
+  return "delta-neutral";
+}
+
+function renderizarComparativoSemanas(dados, semanas, semanaSelecionada) {
+  const box = document.getElementById("comparativoSemanas");
+
+  if (!box) return;
+
+  if (!semanas.length || semanas.length < 2) {
+    box.innerHTML = `
+      <div class="comparativo-box">
+        <h4>📊 Comparativo entre semanas</h4>
+        <p style="color:var(--muted);font-weight:700;">
+          Adicione pelo menos duas semanas para comparar.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  let semanasParaComparar = [];
+
+  if (semanaSelecionada === "TODOS") {
+    semanasParaComparar = semanas;
+  } else {
+    const index = semanas.indexOf(String(semanaSelecionada));
+
+    if (index > 0) {
+      semanasParaComparar = [
+        semanas[index - 1],
+        semanas[index]
+      ];
+    } else {
+      semanasParaComparar = [semanas[index]];
+    }
+  }
+
+  let html = `
+    <div class="comparativo-box">
+      <h4>📊 Comparativo entre semanas</h4>
+      <div class="comparativo-grid">
+  `;
+
+  semanasParaComparar.forEach((semana, index) => {
+    const dadosSemana = dados.filter(item => {
+      return String(item.Semana || "").trim() === String(semana);
+    });
+
+    const resumoAtual = resumirDadosDisparos(dadosSemana);
+
+    const semanaAnterior = semanas[semanas.indexOf(semana) - 1];
+
+    let deltaVendas = 0;
+    let deltaConectados = 0;
+    let deltaConversao = 0;
+
+    if (semanaAnterior) {
+      const dadosAnterior = dados.filter(item => {
+        return String(item.Semana || "").trim() === String(semanaAnterior);
+      });
+
+      const resumoAnterior = resumirDadosDisparos(dadosAnterior);
+
+      deltaVendas = resumoAtual.vendas - resumoAnterior.vendas;
+      deltaConectados = resumoAtual.conectados - resumoAnterior.conectados;
+      deltaConversao = resumoAtual.conversao - resumoAnterior.conversao;
+    }
+
+    html += `
+      <div class="comparativo-card">
+        <span>Semana ${semana}</span>
+        <strong>${resumoAtual.vendas} vendas</strong>
+        <small>Conectados: ${resumoAtual.conectados}</small>
+        <small>Conversão: ${resumoAtual.conversao.toFixed(2)}%</small>
+
+        ${semanaAnterior ? `
+          <small class="${classeDelta(deltaVendas)}">
+            Vendas: ${formatarDeltaNumero(deltaVendas)}
+          </small>
+          <small class="${classeDelta(deltaConectados)}">
+            Conectados: ${formatarDeltaNumero(deltaConectados)}
+          </small>
+          <small class="${classeDelta(deltaConversao)}">
+            Conversão: ${formatarDeltaPercentual(deltaConversao)}
+          </small>
+        ` : `
+          <small class="delta-neutral">Primeira semana registrada</small>
+        `}
+      </div>
+    `;
+  });
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  box.innerHTML = html;
+}
+
+function renderizarMelhoresSemanasPorCloser(dados) {
+  const box = document.getElementById("melhoresSemanas");
+
+  if (!box) return;
+
+  const closers = dados.filter(item => {
+    const nome = (item.Closer || "").trim();
+    return nome && !ehLinhaTotalDisparos(item);
+  });
+
+  const nomesClosers = [...new Set(
+    closers.map(item => item.Closer)
+  )];
+
+  let html = `
+    <div class="melhores-box">
+      <h4>🏆 Melhor semana de cada closer</h4>
+      <div class="melhores-grid">
+  `;
+
+  nomesClosers.forEach(nome => {
+    const semanasDoCloser = closers.filter(item => item.Closer === nome);
+
+    const melhorSemana = semanasDoCloser.sort((a, b) => {
+      const convA = parsePercentual(a.Conversao);
+      const convB = parsePercentual(b.Conversao);
+
+      if (convB !== convA) return convB - convA;
+
+      return parseInteiro(b.Vendas) - parseInteiro(a.Vendas);
+    })[0];
+
+    if (!melhorSemana) return;
+
+    html += `
+      <div class="melhor-card">
+        <span>${nome}</span>
+        <strong>Semana ${melhorSemana.Semana}</strong>
+        <small>Conversão: ${parsePercentual(melhorSemana.Conversao).toFixed(2)}%</small>
+        <small>Vendas: ${parseInteiro(melhorSemana.Vendas)}</small>
+        <small>Conectados: ${parseInteiro(melhorSemana.Conectados)}</small>
+      </div>
+    `;
+  });
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  box.innerHTML = html;
+}
+
+function parseInteiro(valor) {
+  if (valor === null || valor === undefined) return 0;
+
+  return Number(
+    String(valor)
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .trim()
+  ) || 0;
+}
+
 async function carregarDisparos() {
   try {
     const response = await fetch(URL_DISPAROS);
