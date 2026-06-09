@@ -473,6 +473,35 @@ function configurarTabs() {
   });
 }
 
+function configurarTabs() {
+  const botoes = document.querySelectorAll(".tab-btn");
+  const vendasAreas = document.querySelectorAll(".vendas-area");
+  const disparosAreas = document.querySelectorAll(".disparos-area");
+
+  vendasAreas.forEach(area => area.style.display = "");
+  disparosAreas.forEach(area => area.style.display = "none");
+
+  botoes.forEach(botao => {
+    botao.addEventListener("click", () => {
+      const aba = botao.dataset.tab;
+
+      botoes.forEach(b => b.classList.remove("active"));
+      botao.classList.add("active");
+
+      if (aba === "vendas") {
+        vendasAreas.forEach(area => area.style.display = "");
+        disparosAreas.forEach(area => area.style.display = "none");
+      }
+
+      if (aba === "disparos") {
+        vendasAreas.forEach(area => area.style.display = "none");
+        disparosAreas.forEach(area => area.style.display = "block");
+        carregarDisparos();
+      }
+    });
+  });
+}
+
 function parsePercentual(valor) {
   if (valor === null || valor === undefined) return 0;
 
@@ -502,28 +531,19 @@ function ehLinhaTotalDisparos(item) {
 }
 
 function resumirDadosDisparos(lista) {
-  const total = lista.find(ehLinhaTotalDisparos);
+  const linhasTotal = lista.filter(ehLinhaTotalDisparos);
 
   const closers = lista.filter(item => {
     const nome = (item.Closer || "").trim();
     return nome && !ehLinhaTotalDisparos(item);
   });
 
-  const positivo = total
-    ? parseInteiro(total.Positivo)
-    : closers.reduce((acc, item) => acc + parseInteiro(item.Positivo), 0);
+  const base = linhasTotal.length ? linhasTotal : closers;
 
-  const negativo = total
-    ? parseInteiro(total.Negativo)
-    : closers.reduce((acc, item) => acc + parseInteiro(item.Negativo), 0);
-
-  const conectados = total
-    ? parseInteiro(total.Conectados)
-    : closers.reduce((acc, item) => acc + parseInteiro(item.Conectados), 0);
-
-  const vendas = total
-    ? parseInteiro(total.Vendas)
-    : closers.reduce((acc, item) => acc + parseInteiro(item.Vendas), 0);
+  const positivo = base.reduce((acc, item) => acc + parseInteiro(item.Positivo), 0);
+  const negativo = base.reduce((acc, item) => acc + parseInteiro(item.Negativo), 0);
+  const conectados = base.reduce((acc, item) => acc + parseInteiro(item.Conectados), 0);
+  const vendas = base.reduce((acc, item) => acc + parseInteiro(item.Vendas), 0);
 
   const conversao = conectados > 0
     ? (vendas / conectados) * 100
@@ -614,9 +634,9 @@ async function carregarDisparos() {
     document.getElementById("disparosMelhor").textContent =
       melhorTexto;
 
-    renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada);
     renderizarComparativoSemanas(dados, semanas, semanaSelecionada);
     renderizarMelhoresSemanasPorCloser(dados);
+    renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada);
 
   } catch (erro) {
     console.error("Erro ao carregar disparos:", erro);
@@ -728,7 +748,7 @@ function renderizarComparativoSemanas(dados, semanas, semanaSelecionada) {
       <div class="comparativo-grid">
   `;
 
-  semanasParaComparar.forEach((semana, index) => {
+  semanasParaComparar.forEach(semana => {
     const dadosSemana = dados.filter(item => {
       return String(item.Semana || "").trim() === String(semana);
     });
@@ -833,158 +853,6 @@ function renderizarMelhoresSemanasPorCloser(dados) {
   html += `
       </div>
     </div>
-  `;
-
-  box.innerHTML = html;
-}
-
-function parseInteiro(valor) {
-  if (valor === null || valor === undefined) return 0;
-
-  return Number(
-    String(valor)
-      .replace(/\./g, "")
-      .replace(",", ".")
-      .trim()
-  ) || 0;
-}
-
-async function carregarDisparos() {
-  try {
-    const response = await fetch(URL_DISPAROS);
-    const dados = await response.json();
-
-    if (!Array.isArray(dados) || !dados.length) {
-      console.warn("Nenhum dado de disparos encontrado.");
-      return;
-    }
-
-    const semanas = [...new Set(
-      dados
-        .map(item => String(item.Semana || "").trim())
-        .filter(Boolean)
-    )].sort((a,b) => Number(a) - Number(b));
-
-    const selectSemana = document.getElementById("filtroSemanaDisparos");
-
-    if (selectSemana && semanas.length) {
-      const semanaAtual = selectSemana.value || semanas[semanas.length - 1];
-
-      selectSemana.innerHTML = semanas.map(semana => {
-        return `<option value="${semana}">Semana ${semana}</option>`;
-      }).join("");
-
-      selectSemana.value = semanas.includes(semanaAtual)
-        ? semanaAtual
-        : semanas[semanas.length - 1];
-
-      selectSemana.onchange = carregarDisparos;
-    }
-
-    const semanaSelecionada = selectSemana?.value || semanas[semanas.length - 1];
-
-    const dadosSemana = dados.filter(item => {
-      return String(item.Semana || "").trim() === String(semanaSelecionada);
-    });
-
-    const linhaTotal = dadosSemana.find(item => {
-      const nome = (item.Closer || "").trim().toLowerCase();
-      return nome.includes("time") || nome === "total";
-    });
-
-    const closers = dadosSemana.filter(item => {
-      const nome = (item.Closer || "").trim().toLowerCase();
-      return nome && !nome.includes("time") && nome !== "total";
-    });
-
-    const totalConectados = linhaTotal
-      ? parseInteiro(linhaTotal.Conectados)
-      : closers.reduce((acc, item) => acc + parseInteiro(item.Conectados), 0);
-
-    const totalVendas = linhaTotal
-      ? parseInteiro(linhaTotal.Vendas)
-      : closers.reduce((acc, item) => acc + parseInteiro(item.Vendas), 0);
-
-    const conversaoGeral = totalConectados > 0
-      ? (totalVendas / totalConectados) * 100
-      : 0;
-
-    const melhor = [...closers].sort((a,b) => {
-      return parsePercentual(b.Conversao) - parsePercentual(a.Conversao);
-    })[0];
-
-    const melhorTexto = melhor
-      ? `${melhor.Closer} • ${parsePercentual(melhor.Conversao).toFixed(2)}%`
-      : "-";
-
-    document.getElementById("disparosConectados").textContent =
-      totalConectados.toLocaleString("pt-BR");
-
-    document.getElementById("disparosVendas").textContent =
-      totalVendas.toLocaleString("pt-BR");
-
-    document.getElementById("disparosConversao").textContent =
-      `${conversaoGeral.toFixed(2)}%`;
-
-    document.getElementById("disparosMelhor").textContent =
-      melhorTexto;
-
-    renderizarTabelaDisparos(closers, linhaTotal);
-
-  } catch (erro) {
-    console.error("Erro ao carregar disparos:", erro);
-  }
-}
-
-function renderizarTabelaDisparos(closers, linhaTotal) {
-  const box = document.getElementById("tabelaDisparos");
-
-  if (!box) return;
-
-  let html = `
-    <table class="disparos-table">
-      <thead>
-        <tr>
-          <th>Closer</th>
-          <th>Positivos</th>
-          <th>Negativos</th>
-          <th>Conectados</th>
-          <th>Vendas</th>
-          <th>Conversão</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  closers.forEach(item => {
-    html += `
-      <tr>
-        <td>${item.Closer}</td>
-        <td>${parseInteiro(item.Positivo)}</td>
-        <td>${parseInteiro(item.Negativo)}</td>
-        <td>${parseInteiro(item.Conectados)}</td>
-        <td>${parseInteiro(item.Vendas)}</td>
-        <td>${parsePercentual(item.Conversao).toFixed(2)}%</td>
-      </tr>
-    `;
-  });
-
-  if (linhaTotal) {
-    html += `
-      <tr class="total-disparos">
-        <td>${linhaTotal.Closer}</td>
-        <td>${parseInteiro(linhaTotal.Positivo)}</td>
-        <td>${parseInteiro(linhaTotal.Negativo)}</td>
-        <td>${parseInteiro(linhaTotal.Conectados)}</td>
-        <td>${parseInteiro(linhaTotal.Vendas)}</td>
-        <td>${parsePercentual(linhaTotal.Conversao).toFixed(2)}%</td>
-      </tr>
-    `;
-  }
-
-  html += `
-      </tbody>
-    </table>
   `;
 
   box.innerHTML = html;
