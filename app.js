@@ -1,4 +1,5 @@
 const URL = "https://opensheet.elk.sh/1rx8Nd0koxXdCJ4_pZj26TiEwtnD1un4l8j1hqE2Fs3I/DASHBOARD";
+const URL_DISPAROS = "https://opensheet.elk.sh/1rx8Nd0koxXdCJ4_pZj26TiEwtnD1un4l8j1hqE2Fs3I/DISPAROS_DASH";
 
 const LINHAS_RESUMO = [
   "Total Vendido/dia",
@@ -141,6 +142,7 @@ async function carregarDados() {
     renderizarRanking(ranking);
     renderizarTabela(vendedores, dias, linhaTotalDia);
     renderizarGrafico(dias, linhaTotalDia, meta);
+    await carregarDisparos();
 
   } catch (erro) {
     console.error("Erro ao carregar dashboard:", erro);
@@ -310,6 +312,140 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
     }
   });
 }
+function parsePercentual(valor) {
+  if (valor === null || valor === undefined) return 0;
 
+  return Number(
+    String(valor)
+      .replace("%", "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .trim()
+  ) || 0;
+}
+
+function parseInteiro(valor) {
+  if (valor === null || valor === undefined) return 0;
+
+  return Number(
+    String(valor)
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .trim()
+  ) || 0;
+}
+
+async function carregarDisparos() {
+  try {
+    const response = await fetch(URL_DISPAROS);
+    const dados = await response.json();
+
+    if (!Array.isArray(dados) || !dados.length) {
+      console.warn("Nenhum dado de disparos encontrado.");
+      return;
+    }
+
+    const linhaTotal = dados.find(item => {
+      const nome = (item.Closer || "").trim().toLowerCase();
+      return nome.includes("time") || nome === "total";
+    });
+
+    const closers = dados.filter(item => {
+      const nome = (item.Closer || "").trim().toLowerCase();
+      return nome && !nome.includes("time") && nome !== "total";
+    });
+
+    const totalConectados = linhaTotal
+      ? parseInteiro(linhaTotal.Conectados)
+      : closers.reduce((acc, item) => acc + parseInteiro(item.Conectados), 0);
+
+    const totalVendas = linhaTotal
+      ? parseInteiro(linhaTotal.Vendas)
+      : closers.reduce((acc, item) => acc + parseInteiro(item.Vendas), 0);
+
+    const conversaoGeral = totalConectados > 0
+      ? (totalVendas / totalConectados) * 100
+      : 0;
+
+    const melhor = [...closers].sort((a,b) => {
+      return parsePercentual(b.Conversao) - parsePercentual(a.Conversao);
+    })[0];
+
+    const melhorTexto = melhor
+      ? `${melhor.Closer} • ${parsePercentual(melhor.Conversao).toFixed(2)}%`
+      : "-";
+
+    document.getElementById("disparosConectados").textContent =
+      totalConectados.toLocaleString("pt-BR");
+
+    document.getElementById("disparosVendas").textContent =
+      totalVendas.toLocaleString("pt-BR");
+
+    document.getElementById("disparosConversao").textContent =
+      `${conversaoGeral.toFixed(2)}%`;
+
+    document.getElementById("disparosMelhor").textContent =
+      melhorTexto;
+
+    renderizarTabelaDisparos(closers, linhaTotal);
+
+  } catch (erro) {
+    console.error("Erro ao carregar disparos:", erro);
+  }
+}
+
+function renderizarTabelaDisparos(closers, linhaTotal) {
+  const box = document.getElementById("tabelaDisparos");
+
+  if (!box) return;
+
+  let html = `
+    <table class="disparos-table">
+      <thead>
+        <tr>
+          <th>Closer</th>
+          <th>Positivos</th>
+          <th>Negativos</th>
+          <th>Conectados</th>
+          <th>Vendas</th>
+          <th>Conversão</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  closers.forEach(item => {
+    html += `
+      <tr>
+        <td>${item.Closer}</td>
+        <td>${parseInteiro(item.Positivo)}</td>
+        <td>${parseInteiro(item.Negativo)}</td>
+        <td>${parseInteiro(item.Conectados)}</td>
+        <td>${parseInteiro(item.Vendas)}</td>
+        <td>${parsePercentual(item.Conversao).toFixed(2)}%</td>
+      </tr>
+    `;
+  });
+
+  if (linhaTotal) {
+    html += `
+      <tr class="total-disparos">
+        <td>${linhaTotal.Closer}</td>
+        <td>${parseInteiro(linhaTotal.Positivo)}</td>
+        <td>${parseInteiro(linhaTotal.Negativo)}</td>
+        <td>${parseInteiro(linhaTotal.Conectados)}</td>
+        <td>${parseInteiro(linhaTotal.Vendas)}</td>
+        <td>${parsePercentual(linhaTotal.Conversao).toFixed(2)}%</td>
+      </tr>
+    `;
+  }
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  box.innerHTML = html;
+}
 carregarDados();
 setInterval(carregarDados, 300000);
