@@ -11,6 +11,8 @@ const LINHAS_RESUMO = [
 
 let receitaChart = null;
 
+let comparativoMesesChart = null;
+
 function parseValorBR(valor) {
   if (valor === null || valor === undefined) return 0;
 
@@ -637,6 +639,7 @@ async function carregarDisparos() {
     renderizarComparativoSemanas(dados, semanas, semanaSelecionada);
     renderizarMelhoresSemanasPorCloser(dados);
     renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada);
+    renderizarComparativoMeses(dados);
 
   } catch (erro) {
     console.error("Erro ao carregar disparos:", erro);
@@ -972,6 +975,204 @@ function renderizarMelhoresSemanasPorCloser(dados) {
   `;
 
   box.innerHTML = html;
+}
+
+function obterMesDisparo(item) {
+  return String(item.Mes || item.Mês || item.mes || "").trim();
+}
+
+function resumoMesDisparos(dados, mes) {
+  const dadosMes = dados.filter(item => obterMesDisparo(item) === mes);
+
+  const linhasTotal = dadosMes.filter(ehLinhaTotalDisparos);
+
+  const closers = dadosMes.filter(item => {
+    const nome = (item.Closer || "").trim();
+    return nome && !ehLinhaTotalDisparos(item);
+  });
+
+  const base = linhasTotal.length ? linhasTotal : closers;
+
+  const positivo = base.reduce((acc, item) => acc + parseInteiro(item.Positivo), 0);
+  const negativo = base.reduce((acc, item) => acc + parseInteiro(item.Negativo), 0);
+  const conectados = base.reduce((acc, item) => acc + parseInteiro(item.Conectados), 0);
+  const vendas = base.reduce((acc, item) => acc + parseInteiro(item.Vendas), 0);
+
+  const conversao = conectados > 0
+    ? (vendas / conectados) * 100
+    : 0;
+
+  return {
+    positivo,
+    negativo,
+    conectados,
+    vendas,
+    conversao
+  };
+}
+
+function renderizarComparativoMeses(dados) {
+  const selectA = document.getElementById("mesComparativoA");
+  const selectB = document.getElementById("mesComparativoB");
+
+  if (!selectA || !selectB) return;
+
+  const meses = [...new Set(
+    dados
+      .map(item => obterMesDisparo(item))
+      .filter(Boolean)
+  )];
+
+  if (!meses.length) {
+    console.warn("Nenhum mês encontrado. Adicione a coluna Mes na aba DISPAROS_DASH.");
+    return;
+  }
+
+  const valorAtualA = selectA.value;
+  const valorAtualB = selectB.value;
+
+  selectA.innerHTML = meses.map(mes => {
+    return `<option value="${mes}">${mes}</option>`;
+  }).join("");
+
+  selectB.innerHTML = meses.map(mes => {
+    return `<option value="${mes}">${mes}</option>`;
+  }).join("");
+
+  selectA.value = meses.includes(valorAtualA)
+    ? valorAtualA
+    : meses[Math.max(meses.length - 2, 0)];
+
+  selectB.value = meses.includes(valorAtualB)
+    ? valorAtualB
+    : meses[meses.length - 1];
+
+  selectA.onchange = () => renderizarComparativoMeses(dados);
+  selectB.onchange = () => renderizarComparativoMeses(dados);
+
+  const mesA = selectA.value;
+  const mesB = selectB.value;
+
+  const resumoA = resumoMesDisparos(dados, mesA);
+  const resumoB = resumoMesDisparos(dados, mesB);
+
+  const diferenca = resumoB.vendas - resumoA.vendas;
+
+  const percentualDiferenca = resumoA.vendas > 0
+    ? (diferenca / resumoA.vendas) * 100
+    : 0;
+
+  const melhorMes = resumoB.vendas >= resumoA.vendas
+    ? mesB
+    : mesA;
+
+  document.getElementById("labelMesA").textContent = mesA;
+  document.getElementById("labelMesB").textContent = mesB;
+
+  document.getElementById("vendasMesA").textContent =
+    resumoA.vendas.toLocaleString("pt-BR");
+
+  document.getElementById("vendasMesB").textContent =
+    resumoB.vendas.toLocaleString("pt-BR");
+
+  document.getElementById("diferencaMeses").textContent =
+    formatarDeltaNumero(diferenca);
+
+  document.getElementById("percentualDiferencaMeses").textContent =
+    `${percentualDiferenca.toFixed(2)}% vs ${mesA}`;
+
+  document.getElementById("melhorMesComparativo").textContent =
+    melhorMes;
+
+  renderizarGraficoComparativoMeses(mesA, mesB, resumoA, resumoB);
+}
+
+function renderizarGraficoComparativoMeses(mesA, mesB, resumoA, resumoB) {
+  const canvas = document.getElementById("comparativoMesesChart");
+
+  if (!canvas || typeof Chart === "undefined") return;
+
+  if (comparativoMesesChart) {
+    comparativoMesesChart.destroy();
+  }
+
+  comparativoMesesChart = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: ["Conectados", "Vendas", "Conversão (%)"],
+      datasets: [
+        {
+          label: mesA,
+          data: [
+            resumoA.conectados,
+            resumoA.vendas,
+            Number(resumoA.conversao.toFixed(2))
+          ],
+          borderRadius: 8
+        },
+        {
+          label: mesB,
+          data: [
+            resumoB.conectados,
+            resumoB.vendas,
+            Number(resumoB.conversao.toFixed(2))
+          ],
+          borderRadius: 8
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: "#334155",
+            font: {
+              size: 12,
+              weight: "700"
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.dataset.label || "";
+              const metric = context.label;
+              const value = context.raw;
+
+              if (metric === "Conversão (%)") {
+                return `${label}: ${value}%`;
+              }
+
+              return `${label}: ${Number(value).toLocaleString("pt-BR")}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: "#64748b",
+            font: {
+              weight: "700"
+            }
+          },
+          grid: {
+            display: false
+          }
+        },
+        y: {
+          ticks: {
+            color: "#64748b"
+          },
+          grid: {
+            color: "rgba(148,163,184,.22)"
+          }
+        }
+      }
+    }
+  });
 }
 
 configurarTabs();
