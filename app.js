@@ -144,7 +144,6 @@ async function carregarDados() {
     renderizarRanking(ranking);
     renderizarTabela(vendedores, dias, linhaTotalDia);
     renderizarGrafico(dias, linhaTotalDia, meta);
-    await carregarDisparos();
 
   } catch (erro) {
     console.error("Erro ao carregar dashboard:", erro);
