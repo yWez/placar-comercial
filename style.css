@@ -853,3 +853,115 @@ tbody tr:nth-child(even):not(.total-row) td:first-child{
   background: #eef6ff;
   transition: 0.2s;
 }
+
+/* =========================
+   COMPARATIVO ENTRE MESES
+========================= */
+
+.comparativo-meses-box{
+  background:linear-gradient(135deg,#f8fbff,#eef6ff);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:20px;
+  margin:22px 0;
+  box-shadow:0 8px 24px rgba(15,23,42,.05);
+}
+
+.comparativo-meses-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+.comparativo-meses-header h3{
+  font-size:22px;
+  font-weight:900;
+  color:var(--text);
+}
+
+.meses-selects{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.meses-selects select{
+  border:1px solid var(--border);
+  background:white;
+  padding:10px 14px;
+  border-radius:12px;
+  font-family:inherit;
+  font-weight:800;
+  color:var(--text);
+  box-shadow:0 8px 18px rgba(15,23,42,.05);
+}
+
+.comparativo-meses-cards{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  margin-bottom:18px;
+}
+
+.mes-card{
+  background:white;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+}
+
+.mes-card span{
+  display:block;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:var(--muted);
+  font-weight:900;
+  margin-bottom:8px;
+}
+
+.mes-card strong{
+  display:block;
+  font-size:26px;
+  font-weight:900;
+  color:var(--text);
+}
+
+.mes-card small{
+  display:block;
+  margin-top:6px;
+  font-size:13px;
+  font-weight:800;
+  color:var(--muted);
+}
+
+.disparos-chart-wrap{
+  height:340px;
+  background:white;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:18px;
+}
+
+@media(max-width:900px){
+  .comparativo-meses-cards{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:520px){
+  .comparativo-meses-cards{
+    grid-template-columns:1fr;
+  }
+
+  .meses-selects{
+    width:100%;
+  }
+
+  .meses-selects select{
+    width:100%;
+  }
+}
