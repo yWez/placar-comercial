@@ -142,7 +142,48 @@
 
 <div id="melhoresSemanas" class="melhores-semanas"></div>
 
-<div id="tabelaDisparos" class="disparos-table-wrap"></div>
+<div class="comparativo-meses-box">
+  <div class="comparativo-meses-header">
+    <h3>📊 Comparativo entre meses</h3>
+
+    <div class="meses-selects">
+      <select id="mesComparativoA"></select>
+      <select id="mesComparativoB"></select>
+    </div>
+  </div>
+
+  <div class="comparativo-meses-cards">
+    <div class="mes-card">
+      <span id="labelMesA">Mês A</span>
+      <strong id="vendasMesA">0</strong>
+      <small>Vendas</small>
+    </div>
+
+    <div class="mes-card">
+      <span id="labelMesB">Mês B</span>
+      <strong id="vendasMesB">0</strong>
+      <small>Vendas</small>
+    </div>
+
+    <div class="mes-card">
+      <span>Diferença</span>
+      <strong id="diferencaMeses">0</strong>
+      <small id="percentualDiferencaMeses">0%</small>
+    </div>
+
+    <div class="mes-card">
+      <span>Melhor mês</span>
+      <strong id="melhorMesComparativo">-</strong>
+      <small>Por vendas</small>
+    </div>
+  </div>
+
+  <div class="chart-wrap disparos-chart-wrap">
+    <canvas id="comparativoMesesChart"></canvas>
+  </div>
+</div>
+  
+  <div id="tabelaDisparos" class="disparos-table-wrap"></div>
     
     <section class="ranking-section vendas-area">
       <div class="section-title">
