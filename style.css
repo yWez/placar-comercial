@@ -447,3 +447,103 @@ tbody tr:nth-child(even):not(.total-row) td:first-child{
     font-size:24px;
   }
 }
+/* =========================
+   PERFORMANCE DE DISPAROS
+========================= */
+
+.disparos-section{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px;
+  box-shadow:var(--shadow);
+  margin-bottom:20px;
+}
+
+.disparos-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+  margin-bottom:18px;
+}
+
+.disparo-card{
+  background:var(--surface-soft);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+}
+
+.disparo-card span{
+  display:block;
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+
+.disparo-card strong{
+  display:block;
+  font-size:24px;
+  font-weight:800;
+  color:var(--text);
+}
+
+.disparos-table-wrap{
+  width:100%;
+  overflow-x:auto;
+  border-radius:14px;
+  border:1px solid var(--border);
+}
+
+.disparos-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  background:white;
+  min-width:760px;
+}
+
+.disparos-table th{
+  background:#0f172a;
+  color:white;
+  font-size:12px;
+  padding:12px;
+  text-align:center;
+}
+
+.disparos-table td{
+  padding:12px;
+  font-size:13px;
+  text-align:center;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+
+.disparos-table td:first-child{
+  font-weight:800;
+  text-align:left;
+}
+
+.disparos-table tbody tr:nth-child(even){
+  background:#f8fbff;
+}
+
+.disparos-table .total-disparos{
+  background:#eaf4ff;
+  font-weight:900;
+}
+
+@media(max-width:900px){
+  .disparos-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:520px){
+  .disparos-grid{
+    grid-template-columns:1fr;
+  }
+}
