@@ -34,9 +34,14 @@
   </header>
 
   <main class="container">
-
-    <section class="kpi-grid">
-
+    
+<nav class="dashboard-tabs">
+  <button class="tab-btn active" data-tab="vendas">💰 Vendas - Geral</button>
+  <button class="tab-btn" data-tab="disparos">📞 Disparos</button>
+</nav>
+    
+<section class="kpi-grid vendas-area">
+  
       <div class="kpi-card kpi-blue">
         <span>Meta</span>
         <h2 id="meta">R$ 0,00</h2>
@@ -69,7 +74,7 @@
 
     </section>
 
-    <section class="progress-card">
+    <section class="progress-card vendas-area">
       <div class="progress-header">
         <span>Progresso da meta</span>
         <strong id="percentualBarra">0%</strong>
@@ -80,7 +85,7 @@
       </div>
     </section>
 
-    <section class="leader-card">
+    <section class="leader-card vendas-area">
       <div class="section-title">
         <h3>🏆 Líder do mês</h3>
       </div>
@@ -90,7 +95,7 @@
       </div>
     </section>
 
-    <section class="chart-card">
+    <section class="chart-card vendas-area">
       <div class="section-title">
         <h3>📈 Receita acumulada</h3>
       </div>
@@ -99,10 +104,13 @@
         <canvas id="receitaChart"></canvas>
       </div>
     </section>
-<section class="disparos-section">
-  <div class="section-title">
-    <h3>📞 Performance de Disparos</h3>
-  </div>
+    
+<section class="disparos-section disparos-area">
+<div class="section-title">
+  <h3>📞 Performance de Disparos</h3>
+
+  <select id="filtroSemanaDisparos" class="week-select"></select>
+</div>
 
   <div class="disparos-grid">
     <div class="disparo-card">
@@ -128,7 +136,8 @@
 
   <div id="tabelaDisparos" class="disparos-table-wrap"></div>
 </section>
-    <section class="ranking-section">
+    
+    <section class="ranking-section vendas-area">
       <div class="section-title">
         <h3>🏅 Ranking</h3>
       </div>
@@ -136,7 +145,7 @@
       <div id="ranking" class="ranking-grid"></div>
     </section>
 
-    <section class="table-section">
+    <section class="table-section vendas-area">
       <div class="section-title">
         <h3>📅 Vendas por dia</h3>
       </div>
