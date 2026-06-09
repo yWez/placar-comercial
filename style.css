@@ -719,3 +719,137 @@ tbody tr:nth-child(even):not(.total-row) td:first-child{
     grid-template-columns:1fr;
   }
 }
+
+.blocos-semanas {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.semana-bloco {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.semana-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.semana-header h3 {
+  margin: 0;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.badge-semana,
+.badge-geral {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.resumo-semana-card {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  margin-bottom: 18px;
+}
+
+.resumo-semana-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.resumo-semana-topo h4 {
+  margin: 0;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.resumo-semana-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.mini-card {
+  background: #f8fafc;
+  border: 1px solid #d9e2ec;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.mini-card span {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.mini-card strong {
+  display: block;
+  font-size: 26px;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.mini-card.destaque {
+  background: linear-gradient(135deg, #eff6ff, #ecfeff);
+  border: 1px solid #93c5fd;
+}
+
+.mini-card.destaque strong {
+  color: #0f172a;
+}
+
+.disparos-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.disparos-table th {
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 14px;
+}
+
+.disparos-table td {
+  padding: 14px;
+  border: 1px solid #d9e2ec;
+  text-align: center;
+}
+
+.disparos-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.disparos-table tbody tr:hover {
+  background: #eef6ff;
+  transition: 0.2s;
+}
