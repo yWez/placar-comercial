@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Placar Comercial</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 
 <body>
 
   <header class="topbar">
     <div class="brand">
-      <h1> Dashboard Comercial</h1>
+      <h1>Dashboard Comercial</h1>
       <p>Performance do time comercial</p>
     </div>
 
@@ -34,14 +34,12 @@
   </header>
 
   <main class="container">
-    
-<nav class="dashboard-tabs">
-  <button class="tab-btn active" data-tab="vendas"> Vendas - Geral</button>
-  <button class="tab-btn" data-tab="disparos"> Disparos</button>
-</nav>
-    
-<section class="kpi-grid vendas-area">
-  
+    <nav class="dashboard-tabs">
+      <button class="tab-btn active" data-tab="vendas">Vendas - Geral</button>
+      <button class="tab-btn" data-tab="disparos">Disparos</button>
+    </nav>
+
+    <section class="kpi-grid vendas-area">
       <div class="kpi-card kpi-blue">
         <span>Meta</span>
         <h2 id="meta">R$ 0,00</h2>
@@ -71,7 +69,6 @@
         <span>Meta diária</span>
         <h2 id="metaDia">R$ 0,00</h2>
       </div>
-
     </section>
 
     <section class="progress-card vendas-area">
@@ -87,7 +84,7 @@
 
     <section class="leader-card vendas-area">
       <div class="section-title">
-        <h3> Líder do mês</h3>
+        <h3>Líder do mês</h3>
       </div>
 
       <div id="liderMes" class="leader-content">
@@ -97,118 +94,113 @@
 
     <section class="chart-card vendas-area">
       <div class="section-title">
-        <h3> Receita acumulada</h3>
+        <h3>Receita acumulada</h3>
       </div>
+
+      <p class="chart-subtitle">
+        Comparação entre o realizado do mês e a meta ideal diária
+      </p>
 
       <div class="chart-wrap">
         <canvas id="receitaChart"></canvas>
       </div>
     </section>
-    
-<section class="disparos-section disparos-area">
-<div class="section-title">
-  <h3> Performance de Disparos</h3>
 
-  <select id="filtroSemanaDisparos" class="week-select"></select>
-</div>
+    <section class="disparos-section disparos-area">
+      <div class="section-title">
+        <h3>Performance de Disparos</h3>
+        <select id="filtroSemanaDisparos" class="week-select"></select>
+      </div>
 
-  <div class="disparos-grid">
-    <div class="disparo-card">
-      <span>Conectados</span>
-      <strong id="disparosConectados">0</strong>
-    </div>
+      <div class="disparos-grid">
+        <div class="disparo-card">
+          <span>Conectados</span>
+          <strong id="disparosConectados">0</strong>
+        </div>
 
-    <div class="disparo-card">
-      <span>Vendas</span>
-      <strong id="disparosVendas">0</strong>
-    </div>
+        <div class="disparo-card">
+          <span>Vendas</span>
+          <strong id="disparosVendas">0</strong>
+        </div>
 
-    <div class="disparo-card">
-      <span>Conversão</span>
-      <strong id="disparosConversao">0%</strong>
-    </div>
+        <div class="disparo-card">
+          <span>Conversão</span>
+          <strong id="disparosConversao">0%</strong>
+        </div>
 
-    <div class="disparo-card">
-      <span>Melhor conversão</span>
-      <strong id="disparosMelhor">-</strong>
-    </div>
-  </div>
-  
-<div class="disparos-grid">
-  
-</div>
+        <div class="disparo-card">
+          <span>Melhor conversão</span>
+          <strong id="disparosMelhor">-</strong>
+        </div>
+      </div>
 
-<div id="comparativoSemanas" class="comparativo-semanas"></div>
+      <div id="comparativoSemanas" class="comparativo-semanas"></div>
 
-<div id="melhoresSemanas" class="melhores-semanas"></div>
+      <div id="melhoresSemanas" class="melhores-semanas"></div>
 
-<div class="comparativo-meses-box">
-  <div class="comparativo-meses-header">
-    <h3>📊 Comparativo entre meses</h3>
+      <div class="comparativo-meses-box">
+        <div class="comparativo-meses-header">
+          <h3>📊 Comparativo entre meses</h3>
 
-    <div class="meses-selects">
-      <select id="mesComparativoA"></select>
-      <select id="mesComparativoB"></select>
-    </div>
-  </div>
+          <div class="meses-selects">
+            <select id="mesComparativoA"></select>
+            <select id="mesComparativoB"></select>
+          </div>
+        </div>
 
-  <div class="comparativo-meses-cards">
-    <div class="mes-card">
-      <span id="labelMesA">Mês A</span>
-      <strong id="vendasMesA">0</strong>
-      <small>Vendas</small>
-    </div>
+        <div class="comparativo-meses-cards">
+          <div class="mes-card">
+            <span id="labelMesA">Mês A</span>
+            <strong id="vendasMesA">0</strong>
+            <small>Vendas</small>
+          </div>
 
-    <div class="mes-card">
-      <span id="labelMesB">Mês B</span>
-      <strong id="vendasMesB">0</strong>
-      <small>Vendas</small>
-    </div>
+          <div class="mes-card">
+            <span id="labelMesB">Mês B</span>
+            <strong id="vendasMesB">0</strong>
+            <small>Vendas</small>
+          </div>
 
-    <div class="mes-card">
-      <span>Diferença</span>
-      <strong id="diferencaMeses">0</strong>
-      <small id="percentualDiferencaMeses">0%</small>
-    </div>
+          <div class="mes-card">
+            <span>Diferença</span>
+            <strong id="diferencaMeses">0</strong>
+            <small id="percentualDiferencaMeses">0%</small>
+          </div>
 
-    <div class="mes-card">
-      <span>Melhor mês</span>
-      <strong id="melhorMesComparativo">-</strong>
-      <small>Por vendas</small>
-    </div>
-  </div>
+          <div class="mes-card">
+            <span>Melhor mês</span>
+            <strong id="melhorMesComparativo">-</strong>
+            <small>Por vendas</small>
+          </div>
+        </div>
 
-  <div class="chart-wrap disparos-chart-wrap">
-    <canvas id="comparativoMesesChart"></canvas>
-  </div>
-</div>
-  
-  <div id="tabelaDisparos" class="disparos-table-wrap"></div>
-    
-    <div id="tabelaDisparos" class="disparos-table-wrap"></div>
+        <div class="chart-wrap disparos-chart-wrap">
+          <canvas id="comparativoMesesChart"></canvas>
+        </div>
+      </div>
 
-</section>
+      <div id="tabelaDisparos" class="disparos-table-wrap"></div>
+    </section>
 
-<section class="ranking-section vendas-area">
-  <div class="section-title">
-    <h3>Ranking</h3>
-  </div>
+    <section class="ranking-section vendas-area">
+      <div class="section-title">
+        <h3>Ranking</h3>
+      </div>
 
-  <div id="ranking" class="ranking-grid"></div>
-</section>
+      <div id="ranking" class="ranking-grid"></div>
+    </section>
 
-<section class="table-section vendas-area">
-  <div class="section-title">
-    <h3>Vendas por dia</h3>
-  </div>
+    <section class="table-section vendas-area">
+      <div class="section-title">
+        <h3>Vendas por dia</h3>
+      </div>
 
-  <div id="tabela" class="table-wrap"></div>
-</section>
-
-</main>
+      <div id="tabela" class="table-wrap"></div>
+    </section>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=4"></script>
 
 </body>
 </html>
