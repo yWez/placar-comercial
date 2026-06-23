@@ -230,6 +230,8 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
 
   if (!canvas || typeof Chart === "undefined") return;
 
+  const ctx = canvas.getContext("2d");
+
   let acumulado = 0;
 
   const realizadoAcumulado = dias.map(dia => {
@@ -243,11 +245,30 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
     return metaDiariaIdeal * (index + 1);
   });
 
+  const maiorValor = Math.max(
+    meta,
+    ...realizadoAcumulado,
+    ...metaIdeal
+  );
+
+  const formatarMoedaGrafico = valor => {
+    return Number(valor).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      maximumFractionDigits: 0
+    });
+  };
+
   if (receitaChart) {
     receitaChart.destroy();
   }
 
-  receitaChart = new Chart(canvas, {
+  const gradient = ctx.createLinearGradient(0, 0, 0, 420);
+  gradient.addColorStop(0, "rgba(59, 130, 246, 0.34)");
+  gradient.addColorStop(0.55, "rgba(59, 130, 246, 0.12)");
+  gradient.addColorStop(1, "rgba(59, 130, 246, 0.02)");
+
+  receitaChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: dias,
@@ -256,57 +277,120 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
           label: "Realizado",
           data: realizadoAcumulado,
           borderColor: "#3b82f6",
-          backgroundColor: "rgba(59,130,246,.12)",
-          borderWidth: 3,
-          tension: .35,
+          backgroundColor: gradient,
+          borderWidth: 4,
+          tension: 0.35,
           fill: true,
-          pointRadius: 4
+          pointRadius: 4,
+          pointHoverRadius: 8,
+          pointBackgroundColor: "#ffffff",
+          pointBorderColor: "#3b82f6",
+          pointBorderWidth: 4,
+          pointHoverBackgroundColor: "#3b82f6",
+          pointHoverBorderColor: "#ffffff",
+          pointHoverBorderWidth: 3
         },
         {
           label: "Meta ideal",
           data: metaIdeal,
           borderColor: "#ef4444",
-          borderWidth: 2,
-          borderDash: [8, 6],
-          tension: .25,
-          pointRadius: 0
+          backgroundColor: "transparent",
+          borderWidth: 3,
+          borderDash: [10, 8],
+          tension: 0.22,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 0
         }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+      animation: {
+        duration: 1100,
+        easing: "easeOutQuart"
+      },
       plugins: {
         legend: {
+          display: true,
+          position: "top",
+          align: "center",
           labels: {
             color: "#334155",
+            boxWidth: 42,
+            boxHeight: 12,
+            padding: 22,
             font: {
-              size: 12,
-              weight: "700"
+              size: 14,
+              weight: "800"
+            }
+          }
+        },
+        tooltip: {
+          enabled: true,
+          backgroundColor: "#0f172a",
+          titleColor: "#ffffff",
+          bodyColor: "#e2e8f0",
+          borderColor: "rgba(59, 130, 246, 0.35)",
+          borderWidth: 1,
+          padding: 14,
+          cornerRadius: 14,
+          displayColors: true,
+          titleFont: {
+            size: 13,
+            weight: "800"
+          },
+          bodyFont: {
+            size: 13,
+            weight: "700"
+          },
+          callbacks: {
+            title: function(context) {
+              return `Dia ${context[0].label}`;
+            },
+            label: function(context) {
+              return `${context.dataset.label}: ${formatarMoedaGrafico(context.raw)}`;
             }
           }
         }
       },
       scales: {
         x: {
+          grid: {
+            display: false,
+            drawBorder: false
+          },
           ticks: {
             color: "#64748b",
             maxRotation: 45,
-            minRotation: 45
-          },
-          grid: {
-            color: "rgba(148,163,184,.18)"
+            minRotation: 45,
+            font: {
+              size: 12,
+              weight: "700"
+            }
           }
         },
         y: {
+          beginAtZero: true,
+          suggestedMax: maiorValor * 1.15,
+          grid: {
+            color: "rgba(148, 163, 184, 0.18)",
+            drawBorder: false
+          },
           ticks: {
             color: "#64748b",
-            callback: value => {
-              return "R$ " + Number(value).toLocaleString("pt-BR");
+            font: {
+              size: 12,
+              weight: "700"
+            },
+            callback: function(value) {
+              return formatarMoedaGrafico(value);
             }
-          },
-          grid: {
-            color: "rgba(148,163,184,.22)"
           }
         }
       }
