@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Placar Comercial</title>
   <link rel="stylesheet" href="style.css?v=7" />
+  <link rel="stylesheet" href="sprint1.css?v=1" />
 </head>
 
 <body>
@@ -79,6 +80,58 @@
 
       <div class="progress-track">
         <div id="barra"></div>
+      </div>
+    </section>
+
+    <section id="alertaMeta" class="alerta-meta vendas-area">
+      <div class="alerta-left">
+        <span class="alerta-label">Status da meta</span>
+        <strong id="alertaTitulo">Calculando...</strong>
+        <p id="alertaTexto">Analisando ritmo comercial do mês.</p>
+      </div>
+      <div class="alerta-pill">Sprint 1</div>
+    </section>
+
+    <section class="sprint-grid vendas-area">
+      <div class="sprint-card projecao">
+        <span>Projeção final</span>
+        <strong id="projecaoFinal">R$ 0,00</strong>
+        <small id="projecaoPercentual">0% da meta projetada</small>
+        <div class="projecao-track"><div id="metaProjetadaBarra"></div></div>
+      </div>
+
+      <div class="sprint-card ritmo">
+        <span>Ritmo ideal hoje</span>
+        <strong id="ritmoIdealHoje">R$ 0,00</strong>
+        <small id="ritmoIdealLegenda">Ideal acumulado até hoje</small>
+      </div>
+
+      <div class="sprint-card desvio">
+        <span>Desvio da meta</span>
+        <strong id="desvioMeta">R$ 0,00</strong>
+        <small id="desvioMetaLegenda">Comparado ao ideal</small>
+      </div>
+
+      <div class="sprint-card media">
+        <span>Média necessária</span>
+        <strong id="mediaNecessaria">R$ 0,00</strong>
+        <small id="mediaNecessariaLegenda">Para fechar a meta</small>
+      </div>
+
+      <div class="sprint-card previsao">
+        <span>Previsão de batimento</span>
+        <strong id="previsaoMeta">-</strong>
+        <small id="previsaoMetaLegenda">Mantendo o ritmo atual</small>
+      </div>
+    </section>
+
+    <section class="comparativo-vendas-mes vendas-area">
+      <div class="section-title">
+        <h3>Comparativo mês vs mês</h3>
+      </div>
+      <p id="comparativoVendasMesLegenda">Carregando histórico...</p>
+      <div class="chart-wrap">
+        <canvas id="comparativoVendasMesChart"></canvas>
       </div>
     </section>
 
@@ -201,6 +254,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js?v=14"></script>
+  <script src="sprint1.js?v=1"></script>
   
 </body>
 </html>
