@@ -1,5 +1,4 @@
-const URL = "https://opensheet.elk.sh/1rx8Nd0koxXdCJ4_pZj26TiEwtnD1un4l8j1hqE2Fs3I/DASHBOARD";
-
+const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1499943774&single=true&output=csv";
 const LINHAS_RESUMO = [
   "Total Vendido/dia",
   "Total Vendido/mes",
