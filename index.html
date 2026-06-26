@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="sprint1.css?v=1" />
   <link rel="stylesheet" href="sprint2.css?v=2" />
   <link rel="stylesheet" href="sprint3.css?v=1" />
+  <link rel="stylesheet" href="sprint4.css?v=1" />
 </head>
 
 <body>
@@ -49,7 +50,7 @@
 
     <section class="sprint3-actions vendas-area">
       <div class="sprint3-actions-left">
-        <strong>Sprint 3: relatório e mobile</strong>
+        <strong>Relatório e visualização</strong>
         <span>Modo compacto para gestão diária e exportação em PDF para report semanal.</span>
       </div>
       <div class="sprint3-actions-right">
@@ -101,13 +102,96 @@
       </div>
     </section>
 
+    <section class="predictive-grid vendas-area">
+      <div class="predictive-panel">
+        <div class="predictive-title">
+          <div>
+            <h3>Scanner de Risco da Meta</h3>
+            <p>Probabilidade de bater a meta considerando ritmo atual e tendência recente</p>
+          </div>
+          <span class="live-pill">Ao vivo</span>
+        </div>
+        <div class="risk-score">
+          <strong id="riskChance">0%</strong>
+          <span>de chance</span>
+        </div>
+        <div id="riskStatus" class="risk-status medium">Calculando...</div>
+        <div class="risk-track"><div id="riskBar"></div></div>
+        <p id="riskDetail" class="risk-detail">Aguardando leitura da base comercial.</p>
+      </div>
+
+      <div class="predictive-panel">
+        <div class="predictive-title">
+          <div>
+            <h3>Cenários de Faturamento</h3>
+            <p>Projeção conservadora, atual e acelerada para fechamento do mês</p>
+          </div>
+          <span class="live-pill">Preditivo</span>
+        </div>
+        <div class="scenario-list">
+          <div class="scenario-card safe">
+            <div>
+              <small>Conservador</small>
+              <strong id="scenarioSafe">R$ 0,00</strong>
+              <span id="scenarioSafeSub">-</span>
+            </div>
+            <div class="scenario-marker"></div>
+          </div>
+          <div class="scenario-card current">
+            <div>
+              <small>Atual</small>
+              <strong id="scenarioCurrent">R$ 0,00</strong>
+              <span id="scenarioCurrentSub">-</span>
+            </div>
+            <div class="scenario-marker"></div>
+          </div>
+          <div class="scenario-card fast">
+            <div>
+              <small>Acelerado</small>
+              <strong id="scenarioFast">R$ 0,00</strong>
+              <span id="scenarioFastSub">-</span>
+            </div>
+            <div class="scenario-marker"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="predictive-panel">
+        <div class="predictive-title">
+          <div>
+            <h3>Top Performers</h3>
+            <p>Destaques automáticos do time comercial no período</p>
+          </div>
+          <span class="live-pill">Equipe</span>
+        </div>
+        <div class="performers-grid">
+          <div class="performer-card">
+            <div><small>Maior faturamento</small><strong id="topRevenueName">-</strong></div>
+            <span id="topRevenueValue">-</span>
+          </div>
+          <div class="performer-card">
+            <div><small>Maior média diária</small><strong id="topAverageName">-</strong></div>
+            <span id="topAverageValue">-</span>
+          </div>
+          <div class="performer-card">
+            <div><small>Melhor dia individual</small><strong id="topDayName">-</strong></div>
+            <span id="topDayValue">-</span>
+          </div>
+          <div class="performer-card">
+            <div><small>Melhor evolução recente</small><strong id="topGrowthName">-</strong></div>
+            <span id="topGrowthValue">-</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="alertaMeta" class="alerta-meta vendas-area">
       <div class="alerta-left">
         <span class="alerta-label">Status da meta</span>
         <strong id="alertaTitulo">Calculando...</strong>
         <p id="alertaTexto">Analisando ritmo comercial do mês.</p>
       </div>
-      <div class="alerta-pill">Sprint 1</div>
+      <div class="alerta-pill">Análise automática</div>
     </section>
 
     <section class="sprint-grid vendas-area">
@@ -160,7 +244,7 @@
             <h3>Heatmap Comercial</h3>
             <p>Performance por closer e dia da semana</p>
           </div>
-          <span class="sprint2-badge">Sprint 2</span>
+          <span class="sprint2-badge">Mapa de performance</span>
         </div>
         <div id="heatmapComercial" class="heatmap-wrap"></div>
       </div>
@@ -251,7 +335,7 @@
 
       <div class="comparativo-meses-box">
         <div class="comparativo-meses-header">
-          <h3>📊 Comparativo entre meses</h3>
+          <h3>Comparativo entre meses</h3>
 
           <div class="meses-selects">
             <select id="mesComparativoA"></select>
@@ -315,6 +399,7 @@
   <script src="sprint1.js?v=1"></script>
   <script src="sprint2.js?v=1"></script>
   <script src="sprint3.js?v=1"></script>
+  <script src="sprint4.js?v=1"></script>
   
 </body>
 </html>
