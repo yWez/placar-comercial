@@ -14,6 +14,7 @@ let comparativoMesesChart = null;
 
 async function fetchSemCache(url) {
   const separador = url.includes("?") ? "&" : "?";
+
   const response = await fetch(`${url}${separador}t=${Date.now()}`, {
     cache: "no-store"
   });
@@ -67,6 +68,7 @@ function capitalizar(texto) {
 function pegarDiasRestantes() {
   const hoje = new Date();
   const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+
   return Math.max(ultimoDia - hoje.getDate(), 0);
 }
 
@@ -108,8 +110,9 @@ async function carregarDados() {
         return diaA - diaB;
       });
 
-    const buscarLinha = nome =>
-      dados.find(item => (item.Closer || "").trim() === nome);
+    const buscarLinha = nome => {
+      return dados.find(item => (item.Closer || "").trim() === nome);
+    };
 
     const linhaTotalDia = buscarLinha("Total Vendido/dia") || {};
     const linhaMeta = buscarLinha("Meta") || {};
@@ -122,7 +125,11 @@ async function carregarDados() {
 
     const ranking = vendedores.map(vendedor => {
       const nome = (vendedor.Closer || "").trim();
-      const total = dias.reduce((acc, dia) => acc + parseValorBR(vendedor[dia]), 0);
+
+      const total = dias.reduce((acc, dia) => {
+        return acc + parseValorBR(vendedor[dia]);
+      }, 0);
+
       return { nome, total };
     }).sort((a, b) => b.total - a.total);
 
@@ -137,7 +144,10 @@ async function carregarDados() {
 
     dias.forEach(dia => {
       const valorDia = parseValorBR(linhaTotalDia[dia]);
-      if (valorDia > 0) ultimoDiaComVenda = dia;
+
+      if (valorDia > 0) {
+        ultimoDiaComVenda = dia;
+      }
     });
 
     const valorUltimoDia = ultimoDiaComVenda
@@ -153,7 +163,9 @@ async function carregarDados() {
     setTexto("metaDia", formatarMoeda(metaDia));
 
     const barra = document.getElementById("barra");
-    if (barra) barra.style.width = `${Math.min(percentual, 100)}%`;
+    if (barra) {
+      barra.style.width = `${Math.min(percentual, 100)}%`;
+    }
 
     renderizarLider(ranking);
     renderizarRanking(ranking);
