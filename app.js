@@ -1,8 +1,11 @@
-const URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1899560077&single=true&output=csv";
+const URL_VENDAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1899560077&single=true&output=csv";
+const URL_DISPAROS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=277336476&single=true&output=csv";
 
 const META = 250000;
 const MAX = 1000000;
 let receitaChart = null;
+let comparativoMesesChart = null;
+let dadosDisparosCache = null;
 
 const resumo = new Set([
   "total vendido/dia",
@@ -40,6 +43,13 @@ const valor = x => {
 
   return n > MAX ? 0 : n;
 };
+
+const num = x => Number(
+  String(x || "")
+    .replace(/[\s]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+) || 0;
 
 function parseCSV(texto) {
   const linhas = [];
@@ -101,13 +111,16 @@ function parseCSV(texto) {
   });
 }
 
+async function lerCSV(url) {
+  const response = await fetch(`${url}&t=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`Erro ao buscar CSV: ${response.status}`);
+  const csv = await response.text();
+  return parseCSV(csv);
+}
+
 async function carregarDados() {
   try {
-    const csv = await fetch(`${URL}&t=${Date.now()}`, {
-      cache: "no-store"
-    }).then(r => r.text());
-
-    const dados = parseCSV(csv);
+    const dados = await lerCSV(URL_VENDAS);
 
     const dias = Object.keys(dados[0] || {})
       .filter(c => /^\d{2}\/\d{2}$/.test(c))
@@ -280,107 +293,114 @@ function grafico(dias, totalDia) {
   });
 }
 
-function tabs() {
-  const b = document.querySelectorAll(".tab-btn");
-  const v = document.querySelectorAll(".vendas-area");
-  const d = document.querySelectorAll(".disparos-area");
-
-  v.forEach(x => x.style.display = "");
-  d.forEach(x => x.style.display = "none");
-
-  b.forEach(btn => {
-    btn.onclick = () => {
-      b.forEach(x => x.classList.remove("active"));
-      btn.classList.add("active");
-
-      const isV = btn.dataset.tab === "vendas";
-
-      v.forEach(x => x.style.display = isV ? "" : "none");
-      d.forEach(x => x.style.display = isV ? "none" : "block");
-    };
-  });
+function getCampo(linha, nomes) {
+  const keys = Object.keys(linha || {});
+  const alvo = keys.find(k => nomes.some(n => norm(k) === norm(n)));
+  return alvo ? linha[alvo] : "";
 }
 
-const URL_DISPAROS = "https://opensheet.elk.sh/1rx8Nd0koxXdCJ4_pZj26TiEwtnD1un4l8j1hqE2Fs3I/DISPAROS_DASH";
-
-function num(x) {
-  return Number(String(x || "").replace(/\./g, "").replace(",", ".")) || 0;
+function mesDisparo(linha) {
+  return String(getCampo(linha, ["Mês", "Mes", "mês", "mes"]) || "Sem mês").trim();
 }
 
-function pct(x) {
-  return Number(String(x || "").replace("%", "").replace(",", ".")) || 0;
+function semanaDisparo(linha) {
+  return String(getCampo(linha, ["Semana"]) || "").trim();
+}
+
+function closerDisparo(linha) {
+  return String(getCampo(linha, ["Closer"]) || "").trim();
+}
+
+function positivoDisparo(linha) {
+  return num(getCampo(linha, ["Positivo", "Positivos"]));
+}
+
+function negativoDisparo(linha) {
+  return num(getCampo(linha, ["Negativo", "Negativos"]));
+}
+
+function conectadosDisparo(linha) {
+  return num(getCampo(linha, ["Conectados"]));
+}
+
+function vendasDisparo(linha) {
+  return num(getCampo(linha, ["Vendas"]));
+}
+
+function conversaoDisparo(linha) {
+  const conectados = conectadosDisparo(linha);
+  const vendas = vendasDisparo(linha);
+  return conectados > 0 ? (vendas / conectados) * 100 : 0;
 }
 
 function ehTotalDisparos(linha) {
-  const nome = norm(linha.Closer);
+  const nome = norm(closerDisparo(linha));
   return nome.includes("time") || nome.includes("total");
+}
+
+function resumoDisparos(linhas) {
+  const totais = linhas.filter(ehTotalDisparos);
+  const closers = linhas.filter(l => closerDisparo(l) && !ehTotalDisparos(l));
+  const base = totais.length ? totais : closers;
+
+  const conectados = base.reduce((s, l) => s + conectadosDisparo(l), 0);
+  const vendas = base.reduce((s, l) => s + vendasDisparo(l), 0);
+  const positivos = base.reduce((s, l) => s + positivoDisparo(l), 0);
+  const negativos = base.reduce((s, l) => s + negativoDisparo(l), 0);
+  const conversao = conectados > 0 ? (vendas / conectados) * 100 : 0;
+
+  return { positivos, negativos, conectados, vendas, conversao };
 }
 
 async function carregarDisparos() {
   try {
-    const dados = await fetch(`${URL_DISPAROS}?t=${Date.now()}`, {
-      cache: "no-store"
-    }).then(r => r.json());
+    const dados = dadosDisparosCache || await lerCSV(URL_DISPAROS);
+    dadosDisparosCache = dados;
 
-    if (!Array.isArray(dados)) throw new Error("Disparos não retornou lista");
-
-    const semanas = [...new Set(
-      dados.map(l => String(l.Semana || "").trim()).filter(Boolean)
-    )].sort((a, b) => Number(a) - Number(b));
+    const semanas = [...new Set(dados.map(semanaDisparo).filter(Boolean))]
+      .sort((a, b) => Number(a) - Number(b));
 
     const select = document.getElementById("filtroSemanaDisparos");
 
     if (select) {
       const atual = select.value || "TODOS";
-
       select.innerHTML = `
         <option value="TODOS">Todos</option>
         ${semanas.map(s => `<option value="${s}">Semana ${s}</option>`).join("")}
       `;
-
-      select.value = atual === "TODOS" || semanas.includes(atual)
-        ? atual
-        : "TODOS";
-
+      select.value = atual === "TODOS" || semanas.includes(atual) ? atual : "TODOS";
       select.onchange = carregarDisparos;
     }
 
-    const semana = select?.value || "TODOS";
-
-    const filtrados = semana === "TODOS"
+    const semanaSelecionada = select?.value || "TODOS";
+    const filtrados = semanaSelecionada === "TODOS"
       ? dados
-      : dados.filter(l => String(l.Semana || "").trim() === semana);
+      : dados.filter(l => semanaDisparo(l) === semanaSelecionada);
 
-    const closers = filtrados.filter(l => l.Closer && !ehTotalDisparos(l));
-    const totais = filtrados.filter(ehTotalDisparos);
-
-    const baseResumo = totais.length ? totais : closers;
-
-    const positivos = baseResumo.reduce((s, l) => s + num(l.Positivo), 0);
-    const negativos = baseResumo.reduce((s, l) => s + num(l.Negativo), 0);
-    const conectados = baseResumo.reduce((s, l) => s + num(l.Conectados), 0);
-    const vendas = baseResumo.reduce((s, l) => s + num(l.Vendas), 0);
-    const conversao = conectados > 0 ? (vendas / conectados) * 100 : 0;
+    const closers = filtrados.filter(l => closerDisparo(l) && !ehTotalDisparos(l));
+    const resumoAtual = resumoDisparos(filtrados);
 
     const melhor = [...closers].sort((a, b) => {
-      const convB = pct(b.Conversao);
-      const convA = pct(a.Conversao);
-      if (convB !== convA) return convB - convA;
-      return num(b.Vendas) - num(a.Vendas);
+      const diff = conversaoDisparo(b) - conversaoDisparo(a);
+      if (diff !== 0) return diff;
+      return vendasDisparo(b) - vendasDisparo(a);
     })[0];
 
-    txt("disparosConectados", conectados.toLocaleString("pt-BR"));
-    txt("disparosVendas", vendas.toLocaleString("pt-BR"));
-    txt("disparosConversao", `${conversao.toFixed(2)}%`);
-    txt(
-      "disparosMelhor",
-      melhor ? `${melhor.Closer} • ${pct(melhor.Conversao).toFixed(2)}%` : "-"
-    );
+    txt("disparosConectados", resumoAtual.conectados.toLocaleString("pt-BR"));
+    txt("disparosVendas", resumoAtual.vendas.toLocaleString("pt-BR"));
+    txt("disparosConversao", `${resumoAtual.conversao.toFixed(2)}%`);
+    txt("disparosMelhor", melhor ? `${closerDisparo(melhor)} • ${conversaoDisparo(melhor).toFixed(2)}%` : "-");
 
-    renderizarTabelaDisparos(filtrados, semana);
-
+    renderizarTabelaDisparos(filtrados, semanaSelecionada);
+    renderizarComparativoSemanas(dados, semanas);
+    renderizarMelhoresSemanas(dados);
+    renderizarComparativoMeses(dados);
   } catch (e) {
     console.error("Erro ao carregar disparos:", e);
+    txt("disparosConectados", "0");
+    txt("disparosVendas", "0");
+    txt("disparosConversao", "0%");
+    txt("disparosMelhor", "-");
   }
 }
 
@@ -388,7 +408,7 @@ function renderizarTabelaDisparos(linhas, semana) {
   const box = document.getElementById("tabelaDisparos");
   if (!box) return;
 
-  const closers = linhas.filter(l => l.Closer && !ehTotalDisparos(l));
+  const closers = linhas.filter(l => closerDisparo(l) && !ehTotalDisparos(l));
   const total = linhas.find(ehTotalDisparos);
 
   let html = `
@@ -410,13 +430,13 @@ function renderizarTabelaDisparos(linhas, semana) {
   closers.forEach(l => {
     html += `
       <tr>
-        <td>Semana ${l.Semana || "-"}</td>
-        <td><strong>${l.Closer}</strong></td>
-        <td>${num(l.Positivo)}</td>
-        <td>${num(l.Negativo)}</td>
-        <td>${num(l.Conectados)}</td>
-        <td>${num(l.Vendas)}</td>
-        <td>${pct(l.Conversao).toFixed(2)}%</td>
+        <td>Semana ${semanaDisparo(l) || "-"}</td>
+        <td><strong>${closerDisparo(l)}</strong></td>
+        <td>${positivoDisparo(l).toLocaleString("pt-BR")}</td>
+        <td>${negativoDisparo(l).toLocaleString("pt-BR")}</td>
+        <td>${conectadosDisparo(l).toLocaleString("pt-BR")}</td>
+        <td>${vendasDisparo(l).toLocaleString("pt-BR")}</td>
+        <td>${conversaoDisparo(l).toFixed(2)}%</td>
       </tr>
     `;
   });
@@ -424,23 +444,154 @@ function renderizarTabelaDisparos(linhas, semana) {
   if (total) {
     html += `
       <tr class="total-row">
-        <td>Semana ${total.Semana || semana}</td>
-        <td><strong>${total.Closer}</strong></td>
-        <td>${num(total.Positivo)}</td>
-        <td>${num(total.Negativo)}</td>
-        <td>${num(total.Conectados)}</td>
-        <td>${num(total.Vendas)}</td>
-        <td>${pct(total.Conversao).toFixed(2)}%</td>
+        <td>Semana ${semanaDisparo(total) || semana}</td>
+        <td><strong>${closerDisparo(total)}</strong></td>
+        <td>${positivoDisparo(total).toLocaleString("pt-BR")}</td>
+        <td>${negativoDisparo(total).toLocaleString("pt-BR")}</td>
+        <td>${conectadosDisparo(total).toLocaleString("pt-BR")}</td>
+        <td>${vendasDisparo(total).toLocaleString("pt-BR")}</td>
+        <td>${conversaoDisparo(total).toFixed(2)}%</td>
       </tr>
     `;
   }
 
-  html += `
-      </tbody>
-    </table>
-  `;
-
+  html += `</tbody></table>`;
   box.innerHTML = html;
+}
+
+function renderizarComparativoSemanas(dados, semanas) {
+  const box = document.getElementById("comparativoSemanas");
+  if (!box) return;
+
+  box.innerHTML = `
+    <div class="comparativo-box">
+      <h3>📈 Comparativo entre semanas</h3>
+      <div class="comparativo-grid">
+        ${semanas.map(s => {
+          const r = resumoDisparos(dados.filter(l => semanaDisparo(l) === s));
+          return `
+            <div class="comparativo-card">
+              <span>Semana ${s}</span>
+              <strong>${r.vendas.toLocaleString("pt-BR")} vendas</strong>
+              <small>${r.conectados.toLocaleString("pt-BR")} conectados</small>
+              <small>${r.conversao.toFixed(2)}% conversão</small>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderizarMelhoresSemanas(dados) {
+  const box = document.getElementById("melhoresSemanas");
+  if (!box) return;
+
+  const closers = [...new Set(dados.filter(l => !ehTotalDisparos(l)).map(closerDisparo).filter(Boolean))];
+
+  box.innerHTML = `
+    <div class="melhores-box">
+      <h3>🏆 Melhor semana de cada closer</h3>
+      <div class="melhores-grid">
+        ${closers.map(nome => {
+          const melhor = dados
+            .filter(l => closerDisparo(l) === nome)
+            .sort((a, b) => {
+              const diff = conversaoDisparo(b) - conversaoDisparo(a);
+              if (diff !== 0) return diff;
+              return vendasDisparo(b) - vendasDisparo(a);
+            })[0];
+
+          return `
+            <div class="melhor-card">
+              <span>${nome}</span>
+              <strong>Semana ${semanaDisparo(melhor)}</strong>
+              <small>${vendasDisparo(melhor).toLocaleString("pt-BR")} vendas</small>
+              <small>${conversaoDisparo(melhor).toFixed(2)}% conversão</small>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderizarComparativoMeses(dados) {
+  const selectA = document.getElementById("mesComparativoA");
+  const selectB = document.getElementById("mesComparativoB");
+  if (!selectA || !selectB) return;
+
+  const meses = [...new Set(dados.map(mesDisparo).filter(Boolean))];
+  if (!meses.length) return;
+
+  const atualA = selectA.value;
+  const atualB = selectB.value;
+
+  selectA.innerHTML = meses.map(m => `<option value="${m}">${m}</option>`).join("");
+  selectB.innerHTML = meses.map(m => `<option value="${m}">${m}</option>`).join("");
+
+  selectA.value = meses.includes(atualA) ? atualA : meses[0];
+  selectB.value = meses.includes(atualB) ? atualB : meses[meses.length - 1];
+
+  selectA.onchange = () => renderizarComparativoMeses(dados);
+  selectB.onchange = () => renderizarComparativoMeses(dados);
+
+  const mesA = selectA.value;
+  const mesB = selectB.value;
+  const resumoA = resumoDisparos(dados.filter(l => mesDisparo(l) === mesA));
+  const resumoB = resumoDisparos(dados.filter(l => mesDisparo(l) === mesB));
+  const dif = resumoB.vendas - resumoA.vendas;
+  const perc = resumoA.vendas > 0 ? (dif / resumoA.vendas) * 100 : 0;
+
+  txt("labelMesA", mesA);
+  txt("labelMesB", mesB);
+  txt("vendasMesA", resumoA.vendas.toLocaleString("pt-BR"));
+  txt("vendasMesB", resumoB.vendas.toLocaleString("pt-BR"));
+  txt("diferencaMeses", dif.toLocaleString("pt-BR"));
+  txt("percentualDiferencaMeses", `${perc.toFixed(2)}%`);
+  txt("melhorMesComparativo", resumoB.vendas >= resumoA.vendas ? mesB : mesA);
+
+  const canvas = document.getElementById("comparativoMesesChart");
+  if (!canvas || typeof Chart === "undefined") return;
+  if (comparativoMesesChart) comparativoMesesChart.destroy();
+
+  comparativoMesesChart = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: ["Conectados", "Vendas", "Conversão %"],
+      datasets: [
+        { label: mesA, data: [resumoA.conectados, resumoA.vendas, Number(resumoA.conversao.toFixed(2))] },
+        { label: mesB, data: [resumoB.conectados, resumoB.vendas, Number(resumoB.conversao.toFixed(2))] }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+
+function tabs() {
+  const b = document.querySelectorAll(".tab-btn");
+  const v = document.querySelectorAll(".vendas-area");
+  const d = document.querySelectorAll(".disparos-area");
+
+  v.forEach(x => x.style.display = "");
+  d.forEach(x => x.style.display = "none");
+
+  b.forEach(btn => {
+    btn.onclick = () => {
+      b.forEach(x => x.classList.remove("active"));
+      btn.classList.add("active");
+
+      const isV = btn.dataset.tab === "vendas";
+
+      v.forEach(x => x.style.display = isV ? "" : "none");
+      d.forEach(x => x.style.display = isV ? "none" : "block");
+
+      if (!isV) carregarDisparos();
+    };
+  });
 }
 
 tabs();
