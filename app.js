@@ -1,4 +1,5 @@
 const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1499943774&single=true&output=csv";
+
 const LINHAS_RESUMO = [
   "Total Vendido/dia",
   "Total Vendido/mes",
@@ -11,10 +12,24 @@ let receitaChart = null;
 
 async function carregarDados() {
   try {
-    const response = await fetch(`${URL}?t=${Date.now()}`, { cache: "no-store" });
-    const dados = await response.json();
+    const response = await fetch(`${URL_CSV}&t=${Date.now()}`, { cache: "no-store" });
+    
+    const texto = await response.text();
+    
+    const dados = parseCSV(texto);
 
-    const dias = Object.keys(dados[0]).filter(coluna => /^\d{2}\/\d{2}$/.test(coluna));
+if (!dados.length) {
+  throw new Error("CSV vazio ou inválido");
+}
+
+const dias = Object.keys(dados[0])
+  .filter(coluna => /^\d{2}\/\d{2}$/.test(coluna))
+  .sort((a, b) => {
+    const [diaA, mesA] = a.split("/").map(Number);
+    const [diaB, mesB] = b.split("/").map(Number);
+    if (mesA !== mesB) return mesA - mesB;
+    return diaA - diaB;
+  });
 
     const buscarLinha = nome => dados.find(item => (item.Closer || "").trim() === nome);
 
@@ -69,6 +84,61 @@ async function carregarDados() {
   } catch (erro) {
     console.error("Erro ao carregar dashboard:", erro);
   }
+}
+
+function parseCSV(texto) {
+  const linhas = [];
+  let linha = [];
+  let campo = "";
+  let dentroAspas = false;
+
+  for (let i = 0; i < texto.length; i++) {
+    const char = texto[i];
+    const proximo = texto[i + 1];
+
+    if (char === '"') {
+      if (dentroAspas && proximo === '"') {
+        campo += '"';
+        i++;
+      } else {
+        dentroAspas = !dentroAspas;
+      }
+      continue;
+    }
+
+    if (char === "," && !dentroAspas) {
+      linha.push(campo.trim());
+      campo = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !dentroAspas) {
+      if (char === "\r" && proximo === "\n") i++;
+      linha.push(campo.trim());
+      linhas.push(linha);
+      linha = [];
+      campo = "";
+      continue;
+    }
+
+    campo += char;
+  }
+
+  if (campo || linha.length) {
+    linha.push(campo.trim());
+    linhas.push(linha);
+  }
+
+  const linhasValidas = linhas.filter(l => l.some(c => String(c).trim() !== ""));
+  const cabecalho = linhasValidas.shift();
+
+  return linhasValidas.map(linhaAtual => {
+    const item = {};
+    cabecalho.forEach((coluna, index) => {
+      item[String(coluna || "").trim()] = linhaAtual[index] || "";
+    });
+    return item;
+  });
 }
 
 function parseValorBR(valor) {
