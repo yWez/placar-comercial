@@ -10,14 +10,30 @@ const LINHAS_RESUMO = [
 ];
 
 let receitaChart = null;
-
 let comparativoMesesChart = null;
+
+async function fetchSemCache(url) {
+  const separador = url.includes("?") ? "&" : "?";
+  const response = await fetch(`${url}${separador}t=${Date.now()}`, {
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar dados: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function setTexto(id, valor) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = valor;
+}
 
 function parseValorBR(valor) {
   if (valor === null || valor === undefined) return 0;
 
   const texto = String(valor).trim();
-
   if (!texto) return 0;
 
   return Number(
@@ -29,9 +45,17 @@ function parseValorBR(valor) {
 }
 
 function formatarMoeda(valor) {
-  return valor.toLocaleString("pt-BR", {
+  return Number(valor || 0).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL"
+  });
+}
+
+function formatarMoedaSemCentavos(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0
   });
 }
 
@@ -56,16 +80,14 @@ function atualizarTopo() {
     })
   );
 
-  document.getElementById("mesAtual").textContent = mesAtual;
-  document.getElementById("diasRestantes").textContent = pegarDiasRestantes();
-  document.getElementById("ultimaAtualizacao").textContent =
-    agora.toLocaleString("pt-BR");
+  setTexto("mesAtual", mesAtual);
+  setTexto("diasRestantes", pegarDiasRestantes());
+  setTexto("ultimaAtualizacao", agora.toLocaleString("pt-BR"));
 }
 
 async function carregarDados() {
   try {
-    const response = await fetch(URL);
-    const dados = await response.json();
+    const dados = await fetchSemCache(URL);
 
     if (!Array.isArray(dados) || !dados.length) {
       console.error("Nenhum dado encontrado.");
@@ -75,16 +97,16 @@ async function carregarDados() {
     atualizarTopo();
 
     const dias = [...new Set(
-  dados.flatMap(item => Object.keys(item))
-)]
-  .filter(coluna => /^\d{2}\/\d{2}$/.test(coluna))
-  .sort((a, b) => {
-    const [diaA, mesA] = a.split("/").map(Number);
-    const [diaB, mesB] = b.split("/").map(Number);
+      dados.flatMap(item => Object.keys(item))
+    )]
+      .filter(coluna => /^\d{2}\/\d{2}$/.test(coluna))
+      .sort((a, b) => {
+        const [diaA, mesA] = a.split("/").map(Number);
+        const [diaB, mesB] = b.split("/").map(Number);
 
-    if (mesA !== mesB) return mesA - mesB;
-    return diaA - diaB;
-  });
+        if (mesA !== mesB) return mesA - mesB;
+        return diaA - diaB;
+      });
 
     const buscarLinha = nome =>
       dados.find(item => (item.Closer || "").trim() === nome);
@@ -100,13 +122,7 @@ async function carregarDados() {
 
     const ranking = vendedores.map(vendedor => {
       const nome = (vendedor.Closer || "").trim();
-
-      let total = 0;
-
-      dias.forEach(dia => {
-        total += parseValorBR(vendedor[dia]);
-      });
-
+      const total = dias.reduce((acc, dia) => acc + parseValorBR(vendedor[dia]), 0);
       return { nome, total };
     }).sort((a, b) => b.total - a.total);
 
@@ -121,24 +137,23 @@ async function carregarDados() {
 
     dias.forEach(dia => {
       const valorDia = parseValorBR(linhaTotalDia[dia]);
-
-      if (valorDia > 0) {
-        ultimoDiaComVenda = dia;
-      }
+      if (valorDia > 0) ultimoDiaComVenda = dia;
     });
 
     const valorUltimoDia = ultimoDiaComVenda
       ? parseValorBR(linhaTotalDia[ultimoDiaComVenda])
       : 0;
 
-    document.getElementById("meta").textContent = formatarMoeda(meta);
-    document.getElementById("vendido").textContent = formatarMoeda(totalVendido);
-    document.getElementById("falta").textContent = formatarMoeda(falta);
-    document.getElementById("percentual").textContent = `${percentual.toFixed(2)}%`;
-    document.getElementById("percentualBarra").textContent = `${percentual.toFixed(2)}%`;
-    document.getElementById("hoje").textContent = formatarMoeda(valorUltimoDia);
-    document.getElementById("metaDia").textContent = formatarMoeda(metaDia);
-    document.getElementById("barra").style.width = `${Math.min(percentual, 100)}%`;
+    setTexto("meta", formatarMoeda(meta));
+    setTexto("vendido", formatarMoeda(totalVendido));
+    setTexto("falta", formatarMoeda(falta));
+    setTexto("percentual", `${percentual.toFixed(2)}%`);
+    setTexto("percentualBarra", `${percentual.toFixed(2)}%`);
+    setTexto("hoje", formatarMoeda(valorUltimoDia));
+    setTexto("metaDia", formatarMoeda(metaDia));
+
+    const barra = document.getElementById("barra");
+    if (barra) barra.style.width = `${Math.min(percentual, 100)}%`;
 
     renderizarLider(ranking);
     renderizarRanking(ranking);
@@ -152,6 +167,8 @@ async function carregarDados() {
 
 function renderizarLider(ranking) {
   const box = document.getElementById("liderMes");
+  if (!box) return;
+
   const lider = ranking[0];
 
   if (!lider) {
@@ -167,6 +184,12 @@ function renderizarLider(ranking) {
 
 function renderizarRanking(ranking) {
   const rankingBox = document.getElementById("ranking");
+  if (!rankingBox) return;
+
+  if (!ranking.length) {
+    rankingBox.innerHTML = "";
+    return;
+  }
 
   const medalhas = ["🥇", "🥈", "🥉", "🏅"];
 
@@ -185,6 +208,7 @@ function renderizarRanking(ranking) {
 
 function renderizarTabela(vendedores, dias, linhaTotalDia) {
   const tabelaBox = document.getElementById("tabela");
+  if (!tabelaBox) return;
 
   let html = `
     <table>
@@ -227,7 +251,6 @@ function renderizarTabela(vendedores, dias, linhaTotalDia) {
 
 function renderizarGrafico(dias, linhaTotalDia, meta) {
   const canvas = document.getElementById("receitaChart");
-
   if (!canvas || typeof Chart === "undefined") return;
 
   const ctx = canvas.getContext("2d");
@@ -239,25 +262,17 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
     return acumulado;
   });
 
-  const metaDiariaIdeal = meta / dias.length;
+  const metaDiariaIdeal = dias.length > 0 ? meta / dias.length : 0;
 
   const metaIdeal = dias.map((_, index) => {
     return metaDiariaIdeal * (index + 1);
   });
 
   const maiorValor = Math.max(
-    meta,
+    meta || 0,
     ...realizadoAcumulado,
     ...metaIdeal
   );
-
-  const formatarMoedaGrafico = valor => {
-    return Number(valor).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      maximumFractionDigits: 0
-    });
-  };
 
   if (receitaChart) {
     receitaChart.destroy();
@@ -354,7 +369,7 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
               return `Dia ${context[0].label}`;
             },
             label: function(context) {
-              return `${context.dataset.label}: ${formatarMoedaGrafico(context.raw)}`;
+              return `${context.dataset.label}: ${formatarMoedaSemCentavos(context.raw)}`;
             }
           }
         }
@@ -389,201 +404,12 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
               weight: "700"
             },
             callback: function(value) {
-              return formatarMoedaGrafico(value);
+              return formatarMoedaSemCentavos(value);
             }
           }
         }
       }
     }
-  });
-}
-function parsePercentual(valor) {
-  if (valor === null || valor === undefined) return 0;
-
-  return Number(
-    String(valor)
-      .replace("%", "")
-      .replace(/\./g, "")
-      .replace(",", ".")
-      .trim()
-  ) || 0;
-}
-
-function parseInteiro(valor) {
-  if (valor === null || valor === undefined) return 0;
-
-  return Number(
-    String(valor)
-      .replace(/\./g, "")
-      .replace(",", ".")
-      .trim()
-  ) || 0;
-}
-
-async function carregarDisparos() {
-  try {
-    const response = await fetch(URL_DISPAROS);
-    const dados = await response.json();
-
-    if (!Array.isArray(dados) || !dados.length) {
-      console.warn("Nenhum dado de disparos encontrado.");
-      return;
-    }
-
-    const linhaTotal = dados.find(item => {
-      const nome = (item.Closer || "").trim().toLowerCase();
-      return nome.includes("time") || nome === "total";
-    });
-
-    const closers = dados.filter(item => {
-      const nome = (item.Closer || "").trim().toLowerCase();
-      return nome && !nome.includes("time") && nome !== "total";
-    });
-
-    const totalConectados = linhaTotal
-      ? parseInteiro(linhaTotal.Conectados)
-      : closers.reduce((acc, item) => acc + parseInteiro(item.Conectados), 0);
-
-    const totalVendas = linhaTotal
-      ? parseInteiro(linhaTotal.Vendas)
-      : closers.reduce((acc, item) => acc + parseInteiro(item.Vendas), 0);
-
-    const conversaoGeral = totalConectados > 0
-      ? (totalVendas / totalConectados) * 100
-      : 0;
-
-    const melhor = [...closers].sort((a,b) => {
-      return parsePercentual(b.Conversao) - parsePercentual(a.Conversao);
-    })[0];
-
-    const melhorTexto = melhor
-      ? `${melhor.Closer} • ${parsePercentual(melhor.Conversao).toFixed(2)}%`
-      : "-";
-
-    document.getElementById("disparosConectados").textContent =
-      totalConectados.toLocaleString("pt-BR");
-
-    document.getElementById("disparosVendas").textContent =
-      totalVendas.toLocaleString("pt-BR");
-
-    document.getElementById("disparosConversao").textContent =
-      `${conversaoGeral.toFixed(2)}%`;
-
-    document.getElementById("disparosMelhor").textContent =
-      melhorTexto;
-
-    renderizarTabelaDisparos(closers, linhaTotal);
-
-  } catch (erro) {
-    console.error("Erro ao carregar disparos:", erro);
-  }
-}
-
-function renderizarTabelaDisparos(closers, linhaTotal) {
-  const box = document.getElementById("tabelaDisparos");
-
-  if (!box) return;
-
-  let html = `
-    <table class="disparos-table">
-      <thead>
-        <tr>
-          <th>Closer</th>
-          <th>Positivos</th>
-          <th>Negativos</th>
-          <th>Conectados</th>
-          <th>Vendas</th>
-          <th>Conversão</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  closers.forEach(item => {
-    html += `
-      <tr>
-        <td>${item.Closer}</td>
-        <td>${parseInteiro(item.Positivo)}</td>
-        <td>${parseInteiro(item.Negativo)}</td>
-        <td>${parseInteiro(item.Conectados)}</td>
-        <td>${parseInteiro(item.Vendas)}</td>
-        <td>${parsePercentual(item.Conversao).toFixed(2)}%</td>
-      </tr>
-    `;
-  });
-
-  if (linhaTotal) {
-    html += `
-      <tr class="total-disparos">
-        <td>${linhaTotal.Closer}</td>
-        <td>${parseInteiro(linhaTotal.Positivo)}</td>
-        <td>${parseInteiro(linhaTotal.Negativo)}</td>
-        <td>${parseInteiro(linhaTotal.Conectados)}</td>
-        <td>${parseInteiro(linhaTotal.Vendas)}</td>
-        <td>${parsePercentual(linhaTotal.Conversao).toFixed(2)}%</td>
-      </tr>
-    `;
-  }
-
-  html += `
-      </tbody>
-    </table>
-  `;
-
-  box.innerHTML = html;
-}
-function configurarTabs() {
-  const botoes = document.querySelectorAll(".tab-btn");
-  const vendasAreas = document.querySelectorAll(".vendas-area");
-  const disparosAreas = document.querySelectorAll(".disparos-area");
-
-  botoes.forEach(botao => {
-    botao.addEventListener("click", () => {
-      const aba = botao.dataset.tab;
-
-      botoes.forEach(b => b.classList.remove("active"));
-      botao.classList.add("active");
-
-      if (aba === "vendas") {
-        vendasAreas.forEach(area => area.style.display = "");
-        disparosAreas.forEach(area => area.style.display = "none");
-      }
-
-      if (aba === "disparos") {
-        vendasAreas.forEach(area => area.style.display = "none");
-        disparosAreas.forEach(area => area.style.display = "block");
-        carregarDisparos();
-      }
-    });
-  });
-}
-
-function configurarTabs() {
-  const botoes = document.querySelectorAll(".tab-btn");
-  const vendasAreas = document.querySelectorAll(".vendas-area");
-  const disparosAreas = document.querySelectorAll(".disparos-area");
-
-  vendasAreas.forEach(area => area.style.display = "");
-  disparosAreas.forEach(area => area.style.display = "none");
-
-  botoes.forEach(botao => {
-    botao.addEventListener("click", () => {
-      const aba = botao.dataset.tab;
-
-      botoes.forEach(b => b.classList.remove("active"));
-      botao.classList.add("active");
-
-      if (aba === "vendas") {
-        vendasAreas.forEach(area => area.style.display = "");
-        disparosAreas.forEach(area => area.style.display = "none");
-      }
-
-      if (aba === "disparos") {
-        vendasAreas.forEach(area => area.style.display = "none");
-        disparosAreas.forEach(area => area.style.display = "block");
-        carregarDisparos();
-      }
-    });
   });
 }
 
@@ -645,8 +471,7 @@ function resumirDadosDisparos(lista) {
 
 async function carregarDisparos() {
   try {
-    const response = await fetch(URL_DISPAROS);
-    const dados = await response.json();
+    const dados = await fetchSemCache(URL_DISPAROS);
 
     if (!Array.isArray(dados) || !dados.length) {
       console.warn("Nenhum dado de disparos encontrado.");
@@ -699,7 +524,6 @@ async function carregarDisparos() {
       const convB = parsePercentual(b.Conversao);
 
       if (convB !== convA) return convB - convA;
-
       return parseInteiro(b.Vendas) - parseInteiro(a.Vendas);
     })[0];
 
@@ -707,17 +531,10 @@ async function carregarDisparos() {
       ? `${melhor.Closer} • ${parsePercentual(melhor.Conversao).toFixed(2)}%`
       : "-";
 
-    document.getElementById("disparosConectados").textContent =
-      resumo.conectados.toLocaleString("pt-BR");
-
-    document.getElementById("disparosVendas").textContent =
-      resumo.vendas.toLocaleString("pt-BR");
-
-    document.getElementById("disparosConversao").textContent =
-      `${resumo.conversao.toFixed(2)}%`;
-
-    document.getElementById("disparosMelhor").textContent =
-      melhorTexto;
+    setTexto("disparosConectados", resumo.conectados.toLocaleString("pt-BR"));
+    setTexto("disparosVendas", resumo.vendas.toLocaleString("pt-BR"));
+    setTexto("disparosConversao", `${resumo.conversao.toFixed(2)}%`);
+    setTexto("disparosMelhor", melhorTexto);
 
     renderizarComparativoSemanas(dados, semanas, semanaSelecionada);
     renderizarMelhoresSemanasPorCloser(dados);
@@ -733,7 +550,6 @@ function renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada) {
   const box = document.getElementById("tabelaDisparos");
   if (!box) return;
 
-  // quando filtra uma semana só, mantém mais simples
   if (semanaSelecionada !== "TODOS") {
     const linhaTotal = dadosFiltrados.find(ehLinhaTotalDisparos);
     const closers = dadosFiltrados.filter(item => !ehLinhaTotalDisparos(item));
@@ -744,7 +560,7 @@ function renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada) {
       html += `
         <div class="resumo-semana-card">
           <div class="resumo-semana-topo">
-            <h4>📊 Resumo geral da ${"Semana " + linhaTotal.Semana}</h4>
+            <h4>📊 Resumo geral da Semana ${linhaTotal.Semana}</h4>
             <span class="badge-geral">Time Comercial</span>
           </div>
 
@@ -809,13 +625,14 @@ function renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada) {
     return;
   }
 
-  // MODO TODOS
-  const semanas = [...new Set(dadosFiltrados.map(item => item.Semana))].sort((a, b) => Number(a) - Number(b));
+  const semanas = [...new Set(
+    dadosFiltrados.map(item => String(item.Semana || "").trim()).filter(Boolean)
+  )].sort((a, b) => Number(a) - Number(b));
 
   let html = `<div class="blocos-semanas">`;
 
   semanas.forEach(semana => {
-    const dadosSemana = dadosFiltrados.filter(item => String(item.Semana) === String(semana));
+    const dadosSemana = dadosFiltrados.filter(item => String(item.Semana || "").trim() === String(semana));
     const linhaTotal = dadosSemana.find(ehLinhaTotalDisparos);
     const closers = dadosSemana.filter(item => !ehLinhaTotalDisparos(item));
 
@@ -888,7 +705,6 @@ function renderizarTabelaDisparos(dadosFiltrados, semanaSelecionada) {
   });
 
   html += `</div>`;
-
   box.innerHTML = html;
 }
 
@@ -912,7 +728,6 @@ function classeDelta(valor) {
 
 function renderizarComparativoSemanas(dados, semanas, semanaSelecionada) {
   const box = document.getElementById("comparativoSemanas");
-
   if (!box) return;
 
   if (!semanas.length || semanas.length < 2) {
@@ -933,15 +748,7 @@ function renderizarComparativoSemanas(dados, semanas, semanaSelecionada) {
     semanasParaComparar = semanas;
   } else {
     const index = semanas.indexOf(String(semanaSelecionada));
-
-    if (index > 0) {
-      semanasParaComparar = [
-        semanas[index - 1],
-        semanas[index]
-      ];
-    } else {
-      semanasParaComparar = [semanas[index]];
-    }
+    semanasParaComparar = index > 0 ? [semanas[index - 1], semanas[index]] : [semanas[index]];
   }
 
   let html = `
@@ -951,12 +758,8 @@ function renderizarComparativoSemanas(dados, semanas, semanaSelecionada) {
   `;
 
   semanasParaComparar.forEach(semana => {
-    const dadosSemana = dados.filter(item => {
-      return String(item.Semana || "").trim() === String(semana);
-    });
-
+    const dadosSemana = dados.filter(item => String(item.Semana || "").trim() === String(semana));
     const resumoAtual = resumirDadosDisparos(dadosSemana);
-
     const semanaAnterior = semanas[semanas.indexOf(semana) - 1];
 
     let deltaVendas = 0;
@@ -964,10 +767,7 @@ function renderizarComparativoSemanas(dados, semanas, semanaSelecionada) {
     let deltaConversao = 0;
 
     if (semanaAnterior) {
-      const dadosAnterior = dados.filter(item => {
-        return String(item.Semana || "").trim() === String(semanaAnterior);
-      });
-
+      const dadosAnterior = dados.filter(item => String(item.Semana || "").trim() === String(semanaAnterior));
       const resumoAnterior = resumirDadosDisparos(dadosAnterior);
 
       deltaVendas = resumoAtual.vendas - resumoAnterior.vendas;
@@ -983,15 +783,9 @@ function renderizarComparativoSemanas(dados, semanas, semanaSelecionada) {
         <small>Conversão: ${resumoAtual.conversao.toFixed(2)}%</small>
 
         ${semanaAnterior ? `
-          <small class="${classeDelta(deltaVendas)}">
-            Vendas: ${formatarDeltaNumero(deltaVendas)}
-          </small>
-          <small class="${classeDelta(deltaConectados)}">
-            Conectados: ${formatarDeltaNumero(deltaConectados)}
-          </small>
-          <small class="${classeDelta(deltaConversao)}">
-            Conversão: ${formatarDeltaPercentual(deltaConversao)}
-          </small>
+          <small class="${classeDelta(deltaVendas)}">Vendas: ${formatarDeltaNumero(deltaVendas)}</small>
+          <small class="${classeDelta(deltaConectados)}">Conectados: ${formatarDeltaNumero(deltaConectados)}</small>
+          <small class="${classeDelta(deltaConversao)}">Conversão: ${formatarDeltaPercentual(deltaConversao)}</small>
         ` : `
           <small class="delta-neutral">Primeira semana registrada</small>
         `}
@@ -1009,7 +803,6 @@ function renderizarComparativoSemanas(dados, semanas, semanaSelecionada) {
 
 function renderizarMelhoresSemanasPorCloser(dados) {
   const box = document.getElementById("melhoresSemanas");
-
   if (!box) return;
 
   const closers = dados.filter(item => {
@@ -1017,9 +810,7 @@ function renderizarMelhoresSemanasPorCloser(dados) {
     return nome && !ehLinhaTotalDisparos(item);
   });
 
-  const nomesClosers = [...new Set(
-    closers.map(item => item.Closer)
-  )];
+  const nomesClosers = [...new Set(closers.map(item => item.Closer))];
 
   let html = `
     <div class="melhores-box">
@@ -1030,12 +821,11 @@ function renderizarMelhoresSemanasPorCloser(dados) {
   nomesClosers.forEach(nome => {
     const semanasDoCloser = closers.filter(item => item.Closer === nome);
 
-    const melhorSemana = semanasDoCloser.sort((a, b) => {
+    const melhorSemana = [...semanasDoCloser].sort((a, b) => {
       const convA = parsePercentual(a.Conversao);
       const convB = parsePercentual(b.Conversao);
 
       if (convB !== convA) return convB - convA;
-
       return parseInteiro(b.Vendas) - parseInteiro(a.Vendas);
     })[0];
 
@@ -1066,32 +856,7 @@ function obterMesDisparo(item) {
 
 function resumoMesDisparos(dados, mes) {
   const dadosMes = dados.filter(item => obterMesDisparo(item) === mes);
-
-  const linhasTotal = dadosMes.filter(ehLinhaTotalDisparos);
-
-  const closers = dadosMes.filter(item => {
-    const nome = (item.Closer || "").trim();
-    return nome && !ehLinhaTotalDisparos(item);
-  });
-
-  const base = linhasTotal.length ? linhasTotal : closers;
-
-  const positivo = base.reduce((acc, item) => acc + parseInteiro(item.Positivo), 0);
-  const negativo = base.reduce((acc, item) => acc + parseInteiro(item.Negativo), 0);
-  const conectados = base.reduce((acc, item) => acc + parseInteiro(item.Conectados), 0);
-  const vendas = base.reduce((acc, item) => acc + parseInteiro(item.Vendas), 0);
-
-  const conversao = conectados > 0
-    ? (vendas / conectados) * 100
-    : 0;
-
-  return {
-    positivo,
-    negativo,
-    conectados,
-    vendas,
-    conversao
-  };
+  return resumirDadosDisparos(dadosMes);
 }
 
 function renderizarComparativoMeses(dados) {
@@ -1114,13 +879,8 @@ function renderizarComparativoMeses(dados) {
   const valorAtualA = selectA.value;
   const valorAtualB = selectB.value;
 
-  selectA.innerHTML = meses.map(mes => {
-    return `<option value="${mes}">${mes}</option>`;
-  }).join("");
-
-  selectB.innerHTML = meses.map(mes => {
-    return `<option value="${mes}">${mes}</option>`;
-  }).join("");
+  selectA.innerHTML = meses.map(mes => `<option value="${mes}">${mes}</option>`).join("");
+  selectB.innerHTML = meses.map(mes => `<option value="${mes}">${mes}</option>`).join("");
 
   selectA.value = meses.includes(valorAtualA)
     ? valorAtualA
@@ -1145,34 +905,21 @@ function renderizarComparativoMeses(dados) {
     ? (diferenca / resumoA.vendas) * 100
     : 0;
 
-  const melhorMes = resumoB.vendas >= resumoA.vendas
-    ? mesB
-    : mesA;
+  const melhorMes = resumoB.vendas >= resumoA.vendas ? mesB : mesA;
 
-  document.getElementById("labelMesA").textContent = mesA;
-  document.getElementById("labelMesB").textContent = mesB;
-
-  document.getElementById("vendasMesA").textContent =
-    resumoA.vendas.toLocaleString("pt-BR");
-
-  document.getElementById("vendasMesB").textContent =
-    resumoB.vendas.toLocaleString("pt-BR");
-
-  document.getElementById("diferencaMeses").textContent =
-    formatarDeltaNumero(diferenca);
-
-  document.getElementById("percentualDiferencaMeses").textContent =
-    `${percentualDiferenca.toFixed(2)}% vs ${mesA}`;
-
-  document.getElementById("melhorMesComparativo").textContent =
-    melhorMes;
+  setTexto("labelMesA", mesA);
+  setTexto("labelMesB", mesB);
+  setTexto("vendasMesA", resumoA.vendas.toLocaleString("pt-BR"));
+  setTexto("vendasMesB", resumoB.vendas.toLocaleString("pt-BR"));
+  setTexto("diferencaMeses", formatarDeltaNumero(diferenca));
+  setTexto("percentualDiferencaMeses", `${percentualDiferenca.toFixed(2)}% vs ${mesA}`);
+  setTexto("melhorMesComparativo", melhorMes);
 
   renderizarGraficoComparativoMeses(mesA, mesB, resumoA, resumoB);
 }
 
 function renderizarGraficoComparativoMeses(mesA, mesB, resumoA, resumoB) {
   const canvas = document.getElementById("comparativoMesesChart");
-
   if (!canvas || typeof Chart === "undefined") return;
 
   if (comparativoMesesChart) {
@@ -1255,6 +1002,35 @@ function renderizarGraficoComparativoMeses(mesA, mesB, resumoA, resumoB) {
         }
       }
     }
+  });
+}
+
+function configurarTabs() {
+  const botoes = document.querySelectorAll(".tab-btn");
+  const vendasAreas = document.querySelectorAll(".vendas-area");
+  const disparosAreas = document.querySelectorAll(".disparos-area");
+
+  vendasAreas.forEach(area => area.style.display = "");
+  disparosAreas.forEach(area => area.style.display = "none");
+
+  botoes.forEach(botao => {
+    botao.addEventListener("click", () => {
+      const aba = botao.dataset.tab;
+
+      botoes.forEach(b => b.classList.remove("active"));
+      botao.classList.add("active");
+
+      if (aba === "vendas") {
+        vendasAreas.forEach(area => area.style.display = "");
+        disparosAreas.forEach(area => area.style.display = "none");
+      }
+
+      if (aba === "disparos") {
+        vendasAreas.forEach(area => area.style.display = "none");
+        disparosAreas.forEach(area => area.style.display = "block");
+        carregarDisparos();
+      }
+    });
   });
 }
 
