@@ -301,6 +301,148 @@ function tabs() {
   });
 }
 
+const URL_DISPAROS = "https://opensheet.elk.sh/1rx8Nd0koxXdCJ4_pZj26TiEwtnD1un4l8j1hqE2Fs3I/DISPAROS_DASH";
+
+function num(x) {
+  return Number(String(x || "").replace(/\./g, "").replace(",", ".")) || 0;
+}
+
+function pct(x) {
+  return Number(String(x || "").replace("%", "").replace(",", ".")) || 0;
+}
+
+function ehTotalDisparos(linha) {
+  const nome = norm(linha.Closer);
+  return nome.includes("time") || nome.includes("total");
+}
+
+async function carregarDisparos() {
+  try {
+    const dados = await fetch(`${URL_DISPAROS}?t=${Date.now()}`, {
+      cache: "no-store"
+    }).then(r => r.json());
+
+    if (!Array.isArray(dados)) throw new Error("Disparos não retornou lista");
+
+    const semanas = [...new Set(
+      dados.map(l => String(l.Semana || "").trim()).filter(Boolean)
+    )].sort((a, b) => Number(a) - Number(b));
+
+    const select = document.getElementById("filtroSemanaDisparos");
+
+    if (select) {
+      const atual = select.value || "TODOS";
+
+      select.innerHTML = `
+        <option value="TODOS">Todos</option>
+        ${semanas.map(s => `<option value="${s}">Semana ${s}</option>`).join("")}
+      `;
+
+      select.value = atual === "TODOS" || semanas.includes(atual)
+        ? atual
+        : "TODOS";
+
+      select.onchange = carregarDisparos;
+    }
+
+    const semana = select?.value || "TODOS";
+
+    const filtrados = semana === "TODOS"
+      ? dados
+      : dados.filter(l => String(l.Semana || "").trim() === semana);
+
+    const closers = filtrados.filter(l => l.Closer && !ehTotalDisparos(l));
+    const totais = filtrados.filter(ehTotalDisparos);
+
+    const baseResumo = totais.length ? totais : closers;
+
+    const positivos = baseResumo.reduce((s, l) => s + num(l.Positivo), 0);
+    const negativos = baseResumo.reduce((s, l) => s + num(l.Negativo), 0);
+    const conectados = baseResumo.reduce((s, l) => s + num(l.Conectados), 0);
+    const vendas = baseResumo.reduce((s, l) => s + num(l.Vendas), 0);
+    const conversao = conectados > 0 ? (vendas / conectados) * 100 : 0;
+
+    const melhor = [...closers].sort((a, b) => {
+      const convB = pct(b.Conversao);
+      const convA = pct(a.Conversao);
+      if (convB !== convA) return convB - convA;
+      return num(b.Vendas) - num(a.Vendas);
+    })[0];
+
+    txt("disparosConectados", conectados.toLocaleString("pt-BR"));
+    txt("disparosVendas", vendas.toLocaleString("pt-BR"));
+    txt("disparosConversao", `${conversao.toFixed(2)}%`);
+    txt(
+      "disparosMelhor",
+      melhor ? `${melhor.Closer} • ${pct(melhor.Conversao).toFixed(2)}%` : "-"
+    );
+
+    renderizarTabelaDisparos(filtrados, semana);
+
+  } catch (e) {
+    console.error("Erro ao carregar disparos:", e);
+  }
+}
+
+function renderizarTabelaDisparos(linhas, semana) {
+  const box = document.getElementById("tabelaDisparos");
+  if (!box) return;
+
+  const closers = linhas.filter(l => l.Closer && !ehTotalDisparos(l));
+  const total = linhas.find(ehTotalDisparos);
+
+  let html = `
+    <table class="disparos-table">
+      <thead>
+        <tr>
+          <th>Semana</th>
+          <th>Closer</th>
+          <th>Positivos</th>
+          <th>Negativos</th>
+          <th>Conectados</th>
+          <th>Vendas</th>
+          <th>Conversão</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  closers.forEach(l => {
+    html += `
+      <tr>
+        <td>Semana ${l.Semana || "-"}</td>
+        <td><strong>${l.Closer}</strong></td>
+        <td>${num(l.Positivo)}</td>
+        <td>${num(l.Negativo)}</td>
+        <td>${num(l.Conectados)}</td>
+        <td>${num(l.Vendas)}</td>
+        <td>${pct(l.Conversao).toFixed(2)}%</td>
+      </tr>
+    `;
+  });
+
+  if (total) {
+    html += `
+      <tr class="total-row">
+        <td>Semana ${total.Semana || semana}</td>
+        <td><strong>${total.Closer}</strong></td>
+        <td>${num(total.Positivo)}</td>
+        <td>${num(total.Negativo)}</td>
+        <td>${num(total.Conectados)}</td>
+        <td>${num(total.Vendas)}</td>
+        <td>${pct(total.Conversao).toFixed(2)}%</td>
+      </tr>
+    `;
+  }
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  box.innerHTML = html;
+}
+
 tabs();
 carregarDados();
 setInterval(carregarDados, 300000);
