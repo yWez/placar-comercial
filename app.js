@@ -1,11 +1,20 @@
 const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1499943774&single=true&output=csv";
 
+const META_PADRAO = 250000;
+
 const LINHAS_RESUMO = [
-  "Total Vendido/dia",
-  "Total Vendido/mes",
-  "Meta",
-  "Faltando",
-  "Meta Diária"
+  "total vendido/dia",
+  "total vendido/mes",
+  "total vendido/mês",
+  "total vendido mes",
+  "total vendido mês",
+  "meta",
+  "faltando",
+  "meta diária",
+  "meta diaria",
+  "geral",
+  "total",
+  "total geral"
 ];
 
 let receitaChart = null;
@@ -13,45 +22,29 @@ let receitaChart = null;
 async function carregarDados() {
   try {
     const response = await fetch(`${URL_CSV}&t=${Date.now()}`, { cache: "no-store" });
-    
+
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar CSV: ${response.status}`);
+    }
+
     const texto = await response.text();
-    
-    const dados = parseCSV(texto);
+    const dadosBrutos = parseCSV(texto);
 
-if (!dados.length) {
-  throw new Error("CSV vazio ou inválido");
-}
+    if (!Array.isArray(dadosBrutos) || !dadosBrutos.length) {
+      throw new Error("CSV vazio ou inválido.");
+    }
 
-const dias = Object.keys(dados[0])
-  .filter(coluna => /^\d{2}\/\d{2}$/.test(coluna))
-  .sort((a, b) => {
-    const [diaA, mesA] = a.split("/").map(Number);
-    const [diaB, mesB] = b.split("/").map(Number);
-    if (mesA !== mesB) return mesA - mesB;
-    return diaA - diaB;
-  });
-
-    const buscarLinha = nome => dados.find(item => (item.Closer || "").trim() === nome);
-
-    const linhaTotalDia = buscarLinha("Total Vendido/dia") || {};
-    const linhaMeta = buscarLinha("Meta") || {};
-    const linhaMetaDia = buscarLinha("Meta Diária") || {};
-
-    const vendedores = dados.filter(item => {
-      const nome = (item.Closer || "").trim();
-      return nome && !LINHAS_RESUMO.includes(nome);
-    });
+    const modelo = prepararModeloDados(dadosBrutos);
+    const { vendedores, dias, linhaTotalDia, meta, metaDia } = modelo;
 
     const ranking = vendedores.map(vendedor => {
-      const nome = vendedor.Closer;
+      const nome = String(vendedor.Closer || "").trim();
       const total = dias.reduce((acc, dia) => acc + parseValorBR(vendedor[dia]), 0);
       return { nome, total };
     }).sort((a, b) => b.total - a.total);
 
     const totalVendido = ranking.reduce((acc, item) => acc + item.total, 0);
-    const meta = parseValorBR(linhaMeta[dias[0]]);
     const falta = Math.max(meta - totalVendido, 0);
-    const metaDia = parseValorBR(linhaMetaDia[dias[0]]);
     const percentual = meta > 0 ? (totalVendido / meta) * 100 : 0;
 
     let ultimoDiaComVenda = null;
@@ -64,6 +57,8 @@ const dias = Object.keys(dados[0])
 
     const valorUltimoDia = ultimoDiaComVenda ? parseValorBR(linhaTotalDia[ultimoDiaComVenda]) : 0;
 
+    atualizarTopo();
+
     setTexto("meta", formatarMoeda(meta));
     setTexto("vendido", formatarMoeda(totalVendido));
     setTexto("falta", formatarMoeda(falta));
@@ -75,15 +70,117 @@ const dias = Object.keys(dados[0])
     const barra = document.getElementById("barra");
     if (barra) barra.style.width = `${Math.min(percentual, 100)}%`;
 
-    atualizarTopo();
     renderizarLider(ranking);
     renderizarRanking(ranking);
     renderizarTabela(vendedores, dias, linhaTotalDia);
     renderizarGrafico(dias, linhaTotalDia, meta);
-
   } catch (erro) {
     console.error("Erro ao carregar dashboard:", erro);
+    setTexto("liderMes", "Erro ao carregar dados. Abra o Console para ver o detalhe.");
   }
+}
+
+function prepararModeloDados(dadosBrutos) {
+  const chaves = Object.keys(dadosBrutos[0] || {});
+  const colunaCloser = encontrarColuna(chaves, ["closer", "vendedor", "responsavel", "responsável"]);
+  const colunasDia = chaves
+    .map(chave => ({ chave, label: normalizarData(chave) }))
+    .filter(item => item.label)
+    .sort((a, b) => ordenarData(a.label, b.label));
+
+  if (colunasDia.length) {
+    return prepararModeloAberto(dadosBrutos, colunaCloser || "Closer", colunasDia);
+  }
+
+  return prepararModeloLongo(dadosBrutos, chaves, colunaCloser || "Closer");
+}
+
+function prepararModeloAberto(dados, colunaCloser, colunasDia) {
+  const dias = colunasDia.map(item => item.label);
+  const mapaColunaPorDia = Object.fromEntries(colunasDia.map(item => [item.label, item.chave]));
+
+  const buscarLinha = nome => dados.find(item => normalizarTexto(item[colunaCloser]) === normalizarTexto(nome));
+
+  const linhaMeta = buscarLinha("Meta") || {};
+  const linhaMetaDia = buscarLinha("Meta Diária") || buscarLinha("Meta Diaria") || {};
+  const linhaTotalOriginal = buscarLinha("Total Vendido/dia") || buscarLinha("Total") || buscarLinha("Geral") || {};
+
+  const vendedores = dados
+    .filter(item => {
+      const nome = String(item[colunaCloser] || "").trim();
+      return nome && !LINHAS_RESUMO.includes(normalizarTexto(nome));
+    })
+    .map(item => {
+      const vendedor = { Closer: String(item[colunaCloser] || "").trim() };
+      dias.forEach(dia => {
+        vendedor[dia] = item[mapaColunaPorDia[dia]] || "";
+      });
+      return vendedor;
+    });
+
+  const linhaTotalDia = {};
+  dias.forEach(dia => {
+    const chaveOriginal = mapaColunaPorDia[dia];
+    const totalOriginal = parseValorBR(linhaTotalOriginal[chaveOriginal]);
+    linhaTotalDia[dia] = totalOriginal > 0
+      ? totalOriginal
+      : vendedores.reduce((acc, vendedor) => acc + parseValorBR(vendedor[dia]), 0);
+  });
+
+  const primeiroDiaOriginal = mapaColunaPorDia[dias[0]];
+  const meta = parseValorBR(linhaMeta[primeiroDiaOriginal]) || META_PADRAO;
+  const metaDia = parseValorBR(linhaMetaDia[primeiroDiaOriginal]) || (dias.length ? meta / dias.length : 0);
+
+  return { vendedores, dias, linhaTotalDia, meta, metaDia };
+}
+
+function prepararModeloLongo(dados, chaves, colunaCloser) {
+  const colunaData = encontrarColuna(chaves, ["data", "dia", "date"])
+    || encontrarColunaPorValor(dados, chaves, valor => Boolean(normalizarData(valor)));
+
+  const colunaValor = encontrarColuna(chaves, ["valor venda", "valor_venda", "valor", "venda", "vendido", "receita", "valor líquido", "valor liquido"])
+    || encontrarColunaNumerica(dados, chaves.filter(chave => chave !== colunaCloser && chave !== colunaData));
+
+  if (!colunaCloser || !colunaData || !colunaValor) {
+    console.warn("Colunas detectadas:", { colunaCloser, colunaData, colunaValor, chaves });
+    return {
+      vendedores: [],
+      dias: [],
+      linhaTotalDia: {},
+      meta: META_PADRAO,
+      metaDia: 0
+    };
+  }
+
+  const mapaVendedores = new Map();
+  const linhaTotalDia = {};
+  const diasSet = new Set();
+
+  dados.forEach(item => {
+    const nome = String(item[colunaCloser] || "").trim();
+    const nomeNormalizado = normalizarTexto(nome);
+    const dia = normalizarData(item[colunaData]);
+    const valor = parseValorBR(item[colunaValor]);
+
+    if (!nome || !dia || valor <= 0 || LINHAS_RESUMO.includes(nomeNormalizado)) return;
+
+    diasSet.add(dia);
+
+    if (!mapaVendedores.has(nome)) {
+      mapaVendedores.set(nome, { Closer: nome });
+    }
+
+    const vendedor = mapaVendedores.get(nome);
+    vendedor[dia] = (parseValorBR(vendedor[dia]) + valor).toString();
+    linhaTotalDia[dia] = (parseValorBR(linhaTotalDia[dia]) + valor).toString();
+  });
+
+  const dias = [...diasSet].sort(ordenarData);
+  const vendedores = [...mapaVendedores.values()];
+  const meta = META_PADRAO;
+  const metaDia = dias.length ? meta / dias.length : 0;
+
+  return { vendedores, dias, linhaTotalDia, meta, metaDia };
 }
 
 function parseCSV(texto) {
@@ -130,9 +227,15 @@ function parseCSV(texto) {
   }
 
   const linhasValidas = linhas.filter(l => l.some(c => String(c).trim() !== ""));
-  const cabecalho = linhasValidas.shift();
+  const indiceCabecalho = Math.max(0, linhasValidas.findIndex(linhaAtual => {
+    return linhaAtual.some(celula => normalizarTexto(celula) === "closer")
+      || linhaAtual.some(celula => normalizarTexto(celula).includes("vendedor"));
+  }));
 
-  return linhasValidas.map(linhaAtual => {
+  const cabecalho = linhasValidas[indiceCabecalho];
+  const corpo = linhasValidas.slice(indiceCabecalho + 1);
+
+  return corpo.map(linhaAtual => {
     const item = {};
     cabecalho.forEach((coluna, index) => {
       item[String(coluna || "").trim()] = linhaAtual[index] || "";
@@ -141,11 +244,73 @@ function parseCSV(texto) {
   });
 }
 
+function encontrarColuna(chaves, opcoes) {
+  return chaves.find(chave => {
+    const chaveNormalizada = normalizarTexto(chave);
+    return opcoes.some(opcao => chaveNormalizada === normalizarTexto(opcao) || chaveNormalizada.includes(normalizarTexto(opcao)));
+  });
+}
+
+function encontrarColunaPorValor(dados, chaves, teste) {
+  return chaves.find(chave => {
+    const amostra = dados.slice(0, 20).map(item => item[chave]).filter(Boolean);
+    if (!amostra.length) return false;
+    return amostra.filter(teste).length >= Math.ceil(amostra.length * 0.5);
+  });
+}
+
+function encontrarColunaNumerica(dados, chaves) {
+  return chaves.find(chave => {
+    const amostra = dados.slice(0, 30).map(item => item[chave]).filter(Boolean);
+    if (!amostra.length) return false;
+    return amostra.filter(valor => parseValorBR(valor) > 0).length >= Math.ceil(amostra.length * 0.4);
+  });
+}
+
+function normalizarData(valor) {
+  const texto = String(valor || "").trim();
+  if (!texto) return null;
+
+  let match = texto.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+  if (match) {
+    const dia = String(Number(match[1])).padStart(2, "0");
+    const mes = String(Number(match[2])).padStart(2, "0");
+    return `${dia}/${mes}`;
+  }
+
+  match = texto.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (match) {
+    const dia = String(Number(match[3])).padStart(2, "0");
+    const mes = String(Number(match[2])).padStart(2, "0");
+    return `${dia}/${mes}`;
+  }
+
+  return null;
+}
+
+function ordenarData(a, b) {
+  const [diaA, mesA] = a.split("/").map(Number);
+  const [diaB, mesB] = b.split("/").map(Number);
+  if (mesA !== mesB) return mesA - mesB;
+  return diaA - diaB;
+}
+
+function normalizarTexto(texto) {
+  return String(texto || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function parseValorBR(valor) {
-  if (!valor) return 0;
+  if (valor === null || valor === undefined) return 0;
+
+  const texto = String(valor).trim();
+  if (!texto) return 0;
 
   return Number(
-    String(valor)
+    texto
       .replace(/[R$\s]/g, "")
       .replace(/\./g, "")
       .replace(",", ".")
@@ -253,7 +418,6 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
   if (!canvas || typeof Chart === "undefined") return;
 
   const ctx = canvas.getContext("2d");
-
   let acumulado = 0;
 
   const realizado = dias.map(dia => {
@@ -261,7 +425,7 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
     return acumulado;
   });
 
-  const metaDia = meta / dias.length;
+  const metaDia = dias.length ? meta / dias.length : 0;
   const metaIdeal = dias.map((_, index) => metaDia * (index + 1));
 
   if (receitaChart) receitaChart.destroy();
@@ -324,9 +488,7 @@ function renderizarGrafico(dias, linhaTotalDia, meta) {
           padding: 12,
           cornerRadius: 12,
           callbacks: {
-            label: context => {
-              return `${context.dataset.label}: ${formatarMoeda(context.raw)}`;
-            }
+            label: context => `${context.dataset.label}: ${formatarMoeda(context.raw)}`
           }
         }
       },
