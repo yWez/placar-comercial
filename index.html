@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css?v=7" />
   <link rel="stylesheet" href="sprint1.css?v=1" />
   <link rel="stylesheet" href="sprint2.css?v=2" />
+  <link rel="stylesheet" href="sprint3.css?v=1" />
 </head>
 
 <body>
@@ -36,10 +37,26 @@
   </header>
 
   <main class="container">
+    <section class="report-cover">
+      <h1>Relatório Comercial</h1>
+      <p>Mês: <strong id="reportMes">-</strong> • Gerado em: <strong id="reportData">-</strong></p>
+    </section>
+
     <nav class="dashboard-tabs">
       <button class="tab-btn active" data-tab="vendas">Vendas - Geral</button>
       <button class="tab-btn" data-tab="disparos">Disparos</button>
     </nav>
+
+    <section class="sprint3-actions vendas-area">
+      <div class="sprint3-actions-left">
+        <strong>Sprint 3: relatório e mobile</strong>
+        <span>Modo compacto para gestão diária e exportação em PDF para report semanal.</span>
+      </div>
+      <div class="sprint3-actions-right">
+        <button id="modoCompactoBtn" class="sprint3-btn secondary" type="button">Modo compacto</button>
+        <button id="exportarPdfBtn" class="sprint3-btn" type="button">Exportar PDF</button>
+      </div>
+    </section>
 
     <section class="kpi-grid vendas-area">
       <div class="kpi-card kpi-blue">
@@ -297,6 +314,7 @@
   <script src="app.js?v=14"></script>
   <script src="sprint1.js?v=1"></script>
   <script src="sprint2.js?v=1"></script>
+  <script src="sprint3.js?v=1"></script>
   
 </body>
 </html>
