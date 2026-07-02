@@ -83,7 +83,10 @@ function iOrdenarData(a, b) {
 
 function iMontarBase(rows) {
   const ignorar = new Set(["total vendido/dia", "total vendido/mes", "total vendido/mês", "meta", "faltando", "meta diaria", "meta diária"]);
-  const dias = Object.keys(rows[0] || {}).filter(c => /^\d{2}\/\d{2}$/.test(c)).sort(iOrdenarData);
+  const mesAtual = String(new Date().getMonth() + 1).padStart(2, "0");
+  const dias = Object.keys(rows[0] || {})
+    .filter(c => /^\d{2}\/\d{2}$/.test(c) && c.endsWith(`/${mesAtual}`))
+    .sort(iOrdenarData);
   const vendedores = rows.filter(row => row.Closer && !ignorar.has(iNorm(row.Closer)));
   return { dias, vendedores };
 }
@@ -167,6 +170,8 @@ function iRenderChart(nome, valores) {
   const canvas = document.getElementById("individualChart");
   if (!canvas || typeof Chart === "undefined") return;
 
+  const existing = Chart.getChart ? Chart.getChart(canvas) : null;
+  if (existing) existing.destroy();
   if (individualChart) individualChart.destroy();
 
   const acumulado = [];
@@ -233,5 +238,15 @@ async function individualInit() {
   }
 }
 
+function carregarFiltroMesAtual() {
+  const existente = document.querySelector('script[data-month-filter="true"]');
+  if (existente) return;
+  const script = document.createElement("script");
+  script.src = `month-filter.js?v=1&t=${Date.now()}`;
+  script.dataset.monthFilter = "true";
+  document.body.appendChild(script);
+}
+
 individualInit();
 setInterval(individualInit, 300000);
+carregarFiltroMesAtual();
