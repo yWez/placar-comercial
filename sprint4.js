@@ -20,7 +20,7 @@ function pValor(value) {
   return number > PREDICTIVE_MAX ? 0 : number;
 }
 
-function pParseCSV(text) {
+function pParseMatrix(text) {
   const rows = [];
   let row = [];
   let field = "";
@@ -63,33 +63,60 @@ function pParseCSV(text) {
     rows.push(row);
   }
 
-  const clean = rows.filter(rowItem => rowItem.some(cell => String(cell).trim() !== ""));
-  const header = clean.shift() || [];
+  return rows.filter(rowItem => rowItem.some(cell => String(cell).trim() !== ""));
+}
 
-  return clean.map(rowItem => {
-    const obj = {};
-    header.forEach((col, index) => obj[String(col || "").trim()] = rowItem[index] || "");
-    return obj;
+function pInfoData(value) {
+  const s = String(value || "").trim();
+  let m = s.match(/^(\d{2})\/(\d{2})$/);
+  if (m) return { label: `${m[1]}/${m[2]}`, mes: m[2], dia: Number(m[1]) };
+
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+.*)?$/);
+  if (m) return { label: `${m[3]}/${m[2]}`, mes: m[2], dia: Number(m[3]) };
+
+  return null;
+}
+
+function pMontarBase(matriz) {
+  const mesAtual = String(new Date().getMonth() + 1).padStart(2, "0");
+  const ignorar = new Set(["total vendido/dia", "total vendido/mes", "total vendido/mês", "meta", "faltando", "meta diaria", "meta diária", "falta para meta", "total para meta"]);
+
+  let melhorHeader = -1;
+  let melhorQtdDatas = 0;
+
+  matriz.forEach((linha, idx) => {
+    const closerIndex = linha.findIndex(c => pNorm(c) === "closer");
+    if (closerIndex === -1) return;
+    const qtdDatas = linha.filter(c => pInfoData(c)?.mes === mesAtual).length;
+    if (qtdDatas > melhorQtdDatas) {
+      melhorQtdDatas = qtdDatas;
+      melhorHeader = idx;
+    }
   });
-}
 
-function pOrdenarData(a, b) {
-  const [da, ma] = a.split("/").map(Number);
-  const [db, mb] = b.split("/").map(Number);
-  if (ma !== mb) return ma - mb;
-  return da - db;
-}
+  if (melhorHeader === -1) return { dias: [], vendedores: [], totalDia: {}, ranking: [] };
 
-function pDiaSemana(label) {
-  const [day, month] = label.split("/").map(Number);
-  const date = new Date(2026, month - 1, day);
-  return ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"][date.getDay()];
-}
+  const header = matriz[melhorHeader];
+  const closerCol = header.findIndex(c => pNorm(c) === "closer");
+  const dateCols = header
+    .map((cell, index) => ({ ...pInfoData(cell), index }))
+    .filter(item => item.label && item.mes === mesAtual)
+    .sort((a, b) => a.dia - b.dia);
 
-function pMontarBase(rows) {
-  const ignorar = new Set(["total vendido/dia", "total vendido/mes", "total vendido/mês", "meta", "faltando", "meta diaria", "meta diária"]);
-  const dias = Object.keys(rows[0] || {}).filter(c => /^\d{2}\/\d{2}$/.test(c)).sort(pOrdenarData);
-  const vendedores = rows.filter(row => row.Closer && !ignorar.has(pNorm(row.Closer)));
+  const dias = dateCols.map(item => item.label);
+  const vendedores = [];
+
+  for (let i = melhorHeader + 1; i < matriz.length; i++) {
+    const linha = matriz[i];
+    const nome = String(linha[closerCol] || "").trim();
+    const nomeNorm = pNorm(nome);
+    if (!nome) continue;
+    if (linhasInvalidas(nomeNorm, ignorar)) break;
+
+    const row = { Closer: nome };
+    dateCols.forEach(col => row[col.label] = linha[col.index] || "");
+    vendedores.push(row);
+  }
 
   const totalDia = {};
   dias.forEach(day => {
@@ -105,14 +132,16 @@ function pMontarBase(rows) {
   return { dias, vendedores, totalDia, ranking };
 }
 
+function linhasInvalidas(nomeNorm, ignorar) {
+  return ignorar.has(nomeNorm) || nomeNorm.includes("total") || nomeNorm.includes("meta") || nomeNorm.includes("falta");
+}
+
 function pCalcular(base) {
   const hoje = new Date();
-  const mesAtual = String(hoje.getMonth() + 1).padStart(2, "0");
   const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
   const diaAtual = Math.min(hoje.getDate(), ultimoDiaMes);
-  const diasMes = base.dias.filter(day => day.endsWith(`/${mesAtual}`));
-  const diasComVenda = diasMes.filter(day => base.totalDia[day] > 0);
-  const realizado = diasMes.reduce((sum, day) => sum + base.totalDia[day], 0);
+  const diasComVenda = base.dias.filter(day => base.totalDia[day] > 0);
+  const realizado = base.dias.reduce((sum, day) => sum + base.totalDia[day], 0);
   const ultimos7 = diasComVenda.slice(-7);
   const mediaMes = realizado / Math.max(diaAtual, 1);
   const mediaUltimos7 = ultimos7.length ? ultimos7.reduce((sum, day) => sum + base.totalDia[day], 0) / ultimos7.length : mediaMes;
@@ -136,54 +165,7 @@ function pCalcular(base) {
   const atual = projecaoAtual;
   const acelerado = realizado + (Math.max(mediaMes, mediaUltimos7) * 1.18 * diasRestantes);
 
-  return {
-    realizado,
-    diaAtual,
-    diasRestantes,
-    mediaMes,
-    mediaUltimos7,
-    projecaoAtual,
-    chance,
-    status,
-    statusText,
-    detail,
-    cenarios: { conservador, atual, acelerado }
-  };
-}
-
-function pTopPerformers(base) {
-  const ranking = base.ranking;
-  const diasComVenda = base.dias.filter(day => base.totalDia[day] > 0);
-  const ultimoDia = diasComVenda[diasComVenda.length - 1];
-  const penultimoDia = diasComVenda[diasComVenda.length - 2];
-
-  const maiorFaturamento = ranking[0] || null;
-
-  const maiorMedia = [...ranking].map(item => {
-    const diasAtivos = base.dias.filter(day => pValor(item.row[day]) > 0).length || 1;
-    return { nome: item.nome, valor: item.total / diasAtivos };
-  }).sort((a, b) => b.valor - a.valor)[0];
-
-  const melhorDia = [];
-  base.vendedores.forEach(row => {
-    base.dias.forEach(day => {
-      melhorDia.push({ nome: String(row.Closer).trim(), day, valor: pValor(row[day]) });
-    });
-  });
-  const maiorDia = melhorDia.sort((a, b) => b.valor - a.valor)[0];
-
-  const evolucao = ranking.map(item => {
-    const atual = ultimoDia ? pValor(item.row[ultimoDia]) : 0;
-    const anterior = penultimoDia ? pValor(item.row[penultimoDia]) : 0;
-    return { nome: item.nome, valor: atual - anterior };
-  }).sort((a, b) => b.valor - a.valor)[0];
-
-  return {
-    maiorFaturamento,
-    maiorMedia,
-    maiorDia,
-    evolucao
-  };
+  return { realizado, diaAtual, diasRestantes, mediaMes, mediaUltimos7, projecaoAtual, chance, status, statusText, detail, cenarios: { conservador, atual, acelerado } };
 }
 
 function pRender(base, calc) {
@@ -192,9 +174,7 @@ function pRender(base, calc) {
   pSet("riskDetail", calc.detail);
 
   const riskStatus = document.getElementById("riskStatus");
-  if (riskStatus) {
-    riskStatus.className = `risk-status ${calc.status}`;
-  }
+  if (riskStatus) riskStatus.className = `risk-status ${calc.status}`;
 
   const riskBar = document.getElementById("riskBar");
   if (riskBar) riskBar.style.width = `${calc.chance}%`;
@@ -205,16 +185,6 @@ function pRender(base, calc) {
   pSet("scenarioSafeSub", "Ritmo reduzido e comportamento defensivo");
   pSet("scenarioCurrentSub", "Mantendo a média atual do mês");
   pSet("scenarioFastSub", "Aceleração baseada nos melhores dias recentes");
-
-  const tops = pTopPerformers(base);
-  pSet("topRevenueName", tops.maiorFaturamento ? tops.maiorFaturamento.nome : "-");
-  pSet("topRevenueValue", tops.maiorFaturamento ? pBRL(tops.maiorFaturamento.total) : "-");
-  pSet("topAverageName", tops.maiorMedia ? tops.maiorMedia.nome : "-");
-  pSet("topAverageValue", tops.maiorMedia ? pBRL(tops.maiorMedia.valor) : "-");
-  pSet("topDayName", tops.maiorDia ? `${tops.maiorDia.nome} • ${tops.maiorDia.day}` : "-");
-  pSet("topDayValue", tops.maiorDia ? pBRL(tops.maiorDia.valor) : "-");
-  pSet("topGrowthName", tops.evolucao ? tops.evolucao.nome : "-");
-  pSet("topGrowthValue", tops.evolucao ? `${tops.evolucao.valor >= 0 ? "+" : "-"}${pBRL(Math.abs(tops.evolucao.valor))}` : "-");
 }
 
 async function predictiveInit() {
@@ -222,8 +192,8 @@ async function predictiveInit() {
     const response = await fetch(`${PREDICTIVE_URL_VENDAS}&predictive=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`Erro ao buscar vendas: ${response.status}`);
     const csv = await response.text();
-    const rows = pParseCSV(csv);
-    const base = pMontarBase(rows);
+    const matriz = pParseMatrix(csv);
+    const base = pMontarBase(matriz);
     const calc = pCalcular(base);
     pRender(base, calc);
   } catch (error) {
