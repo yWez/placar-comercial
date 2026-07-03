@@ -9,17 +9,11 @@
   <link rel="stylesheet" href="sprint3.css?v=1" />
   <link rel="stylesheet" href="sprint4.css?v=1" />
   <link rel="stylesheet" href="sprint5.css?v=1" />
-  <link rel="stylesheet" href="tech-upgrade.css?v=1" />
+  <link rel="stylesheet" href="tech-upgrade.css?v=2" />
 </head>
-
 <body>
-
   <header class="topbar">
-    <div class="brand">
-      <h1>Dashboard Comercial</h1>
-      <p>Performance do time comercial</p>
-    </div>
-
+    <div class="brand"><h1>Dashboard Comercial</h1><p>Performance do time comercial</p></div>
     <div class="topbar-info">
       <div class="info-chip"><span>Mês</span><strong id="mesAtual">-</strong></div>
       <div class="info-chip"><span>Dias restantes</span><strong id="diasRestantes">-</strong></div>
@@ -28,25 +22,12 @@
   </header>
 
   <main class="container">
-    <section class="report-cover">
-      <h1>Relatório Comercial</h1>
-      <p>Mês: <strong id="reportMes">-</strong> • Gerado em: <strong id="reportData">-</strong></p>
-    </section>
-
-    <nav class="dashboard-tabs">
-      <button class="tab-btn active" data-tab="vendas">Vendas - Geral</button>
-      <button class="tab-btn" data-tab="disparos">Disparos</button>
-    </nav>
+    <section class="report-cover"><h1>Relatório Comercial</h1><p>Mês: <strong id="reportMes">-</strong> • Gerado em: <strong id="reportData">-</strong></p></section>
+    <nav class="dashboard-tabs"><button class="tab-btn active" data-tab="vendas">Vendas - Geral</button><button class="tab-btn" data-tab="disparos">Disparos</button></nav>
 
     <section class="sprint3-actions vendas-area">
-      <div class="sprint3-actions-left">
-        <strong>Relatório e visualização</strong>
-        <span>Modo compacto para gestão diária e exportação em PDF para report semanal.</span>
-      </div>
-      <div class="sprint3-actions-right">
-        <button id="modoCompactoBtn" class="sprint3-btn secondary" type="button">Modo compacto</button>
-        <button id="exportarPdfBtn" class="sprint3-btn" type="button">Exportar PDF</button>
-      </div>
+      <div class="sprint3-actions-left"><strong>Relatório e visualização</strong><span>Modo compacto para gestão diária e exportação em PDF para report semanal.</span></div>
+      <div class="sprint3-actions-right"><button id="modoCompactoBtn" class="sprint3-btn secondary" type="button">Modo compacto</button><button id="exportarPdfBtn" class="sprint3-btn" type="button">Exportar PDF</button></div>
     </section>
 
     <section class="kpi-grid vendas-area">
@@ -58,39 +39,20 @@
       <div class="kpi-card kpi-cyan"><span>Meta diária</span><h2 id="metaDia">R$ 0,00</h2></div>
     </section>
 
-    <section class="progress-card vendas-area">
-      <div class="progress-header"><span>Progresso da meta</span><strong id="percentualBarra">0%</strong></div>
-      <div class="progress-track"><div id="barra"></div></div>
-    </section>
+    <section class="progress-card vendas-area"><div class="progress-header"><span>Progresso da meta</span><strong id="percentualBarra">0%</strong></div><div class="progress-track"><div id="barra"></div></div></section>
 
     <section class="tech-ranking-section vendas-area">
-      <div class="tech-ranking-header">
-        <div>
-          <h3>Ranking Comercial ao Vivo</h3>
-          <p>Os cinco vendedores lado a lado, reposicionados automaticamente pelo faturamento do mês.</p>
-        </div>
-        <span class="tech-ranking-pill">Ordem dinâmica</span>
-      </div>
+      <div class="tech-ranking-header"><div><h3>Ranking Comercial ao Vivo</h3><p>Os cinco vendedores lado a lado, reposicionados automaticamente pelo faturamento do mês.</p></div><span class="tech-ranking-pill">Ordem dinâmica</span></div>
       <div id="techRankingClosers" class="tech-closer-row"></div>
     </section>
 
     <section class="predictive-grid vendas-area predictive-grid-clean">
       <div class="predictive-panel">
-        <div class="predictive-title">
-          <div><h3>Scanner de Risco da Meta</h3><p>Probabilidade de bater a meta considerando ritmo atual e tendência recente</p></div>
-          <span class="live-pill">Ao vivo</span>
-        </div>
-        <div class="risk-score"><strong id="riskChance">0%</strong><span>de chance</span></div>
-        <div id="riskStatus" class="risk-status medium">Calculando...</div>
-        <div class="risk-track"><div id="riskBar"></div></div>
-        <p id="riskDetail" class="risk-detail">Aguardando leitura da base comercial.</p>
+        <div class="predictive-title"><div><h3>Scanner de Risco da Meta</h3><p>Probabilidade de bater a meta considerando ritmo atual e tendência recente</p></div><span class="live-pill">Ao vivo</span></div>
+        <div class="risk-score"><strong id="riskChance">0%</strong><span>de chance</span></div><div id="riskStatus" class="risk-status medium">Calculando...</div><div class="risk-track"><div id="riskBar"></div></div><p id="riskDetail" class="risk-detail">Aguardando leitura da base comercial.</p>
       </div>
-
       <div class="predictive-panel">
-        <div class="predictive-title">
-          <div><h3>Cenários de Faturamento</h3><p>Projeção conservadora, atual e acelerada para fechamento do mês</p></div>
-          <span class="live-pill">Preditivo</span>
-        </div>
+        <div class="predictive-title"><div><h3>Cenários de Faturamento</h3><p>Projeção conservadora, atual e acelerada para fechamento do mês</p></div><span class="live-pill">Preditivo</span></div>
         <div class="scenario-list">
           <div class="scenario-card safe"><div><small>Conservador</small><strong id="scenarioSafe">R$ 0,00</strong><span id="scenarioSafeSub">-</span></div><div class="scenario-marker"></div></div>
           <div class="scenario-card current"><div><small>Atual</small><strong id="scenarioCurrent">R$ 0,00</strong><span id="scenarioCurrentSub">-</span></div><div class="scenario-marker"></div></div>
@@ -100,16 +62,7 @@
     </section>
 
     <section class="month-compare-section vendas-area">
-      <div class="month-compare-header">
-        <div>
-          <h3>Comparativo Mês vs Mês</h3>
-          <p id="monthCompareLegend">Selecione dois meses para acompanhar evolução, queda ou aceleração da operação.</p>
-        </div>
-        <div class="month-selectors">
-          <select id="monthCompareA"></select>
-          <select id="monthCompareB"></select>
-        </div>
-      </div>
+      <div class="month-compare-header"><div><h3>Comparativo Mês vs Mês</h3><p id="monthCompareLegend">Selecione dois meses para acompanhar evolução, queda ou aceleração da operação.</p></div><div class="month-selectors"><select id="monthCompareA"></select><select id="monthCompareB"></select></div></div>
       <div class="month-compare-grid">
         <div class="month-metric-card"><span>Mês A</span><strong id="monthCompareTotalA">R$ 0,00</strong><small>Base comparativa</small></div>
         <div class="month-metric-card"><span>Mês B</span><strong id="monthCompareTotalB">R$ 0,00</strong><small>Mês analisado</small></div>
@@ -120,92 +73,38 @@
       <div class="month-chart-wrap"><canvas id="monthCompareChart"></canvas></div>
     </section>
 
+    <section class="webinar-compare-section vendas-area">
+      <div class="webinar-compare-header"><div><h3>Comparativo dos Dias de Webinário</h3><p id="webinarLegend">Comparação focada em segunda, terça, quarta e quinta para entender os dias de maior impacto.</p></div><div class="webinar-selectors"><select id="webinarMonthA"></select><select id="webinarMonthB"></select></div></div>
+      <div class="webinar-compare-grid">
+        <div class="webinar-card"><span>Mês A</span><strong id="webinarTotalA">R$ 0,00</strong><small>Total apenas nos dias de webinário</small></div>
+        <div class="webinar-card"><span>Mês B</span><strong id="webinarTotalB">R$ 0,00</strong><small>Total apenas nos dias de webinário</small></div>
+        <div class="webinar-card"><span>Diferença</span><strong id="webinarDelta">R$ 0,00</strong><small id="webinarPct">0%</small></div>
+        <div class="webinar-card"><span>Média por dia</span><strong id="webinarAvg">R$ 0,00</strong><small>No mês analisado</small></div>
+        <div class="webinar-card"><span>Dias analisados</span><strong id="webinarDays">0 dias</strong><small>Segunda a quinta</small></div>
+      </div>
+      <div class="webinar-chart-wrap"><canvas id="webinarChart"></canvas></div>
+      <div id="webinarDaysGrid" class="webinar-days-grid"></div>
+    </section>
+
     <section class="individual-panel vendas-area">
-      <div class="individual-header">
-        <div><h3>Dashboard Individual do Closer</h3><p>Visão individual para acompanhamento, feedback e gestão 1:1.</p></div>
-        <div class="individual-controls"><select id="filtroCloserIndividual" class="individual-select"></select></div>
-      </div>
-
+      <div class="individual-header"><div><h3>Dashboard Individual do Closer</h3><p>Visão individual para acompanhamento, feedback e gestão 1:1.</p></div><div class="individual-controls"><select id="filtroCloserIndividual" class="individual-select"></select></div></div>
       <div class="individual-grid">
-        <div class="individual-card"><span>Closer</span><strong id="individualNome">-</strong><small>Selecionado</small></div>
-        <div class="individual-card"><span>Total vendido</span><strong id="individualTotal">R$ 0,00</strong><small>Acumulado no período</small></div>
-        <div class="individual-card"><span>Média ativa</span><strong id="individualMedia">R$ 0,00</strong><small>Por dia com venda</small></div>
-        <div class="individual-card"><span>Projeção individual</span><strong id="individualProjecao">R$ 0,00</strong><small>Até o fim do mês</small></div>
+        <div class="individual-card"><span>Closer</span><strong id="individualNome">-</strong><small>Selecionado</small></div><div class="individual-card"><span>Total vendido</span><strong id="individualTotal">R$ 0,00</strong><small>Acumulado no período</small></div><div class="individual-card"><span>Média ativa</span><strong id="individualMedia">R$ 0,00</strong><small>Por dia com venda</small></div><div class="individual-card"><span>Projeção individual</span><strong id="individualProjecao">R$ 0,00</strong><small>Até o fim do mês</small></div>
       </div>
-
-      <div class="individual-layout">
-        <div class="individual-chart-box"><h4>Evolução diária e acumulada</h4><div class="individual-chart-wrap"><canvas id="individualChart"></canvas></div></div>
-        <div class="individual-side-box">
-          <h4>Resumo individual</h4>
-          <div class="individual-list">
-            <div class="individual-list-item"><span>Dias com venda</span><strong id="individualDiasAtivos">-</strong></div>
-            <div class="individual-list-item"><span>Melhor dia</span><strong id="individualMelhorDia">-</strong></div>
-            <div class="individual-list-item"><span>Menor dia com venda</span><strong id="individualPiorDia">-</strong></div>
-            <div class="individual-list-item"><span>Melhor semana</span><strong id="individualMelhorSemana">-</strong></div>
-            <div class="individual-list-item"><span>Maior sequência</span><strong id="individualStreak" class="streak-pill">-</strong></div>
-          </div>
-        </div>
-      </div>
+      <div class="individual-layout"><div class="individual-chart-box"><h4>Evolução diária e acumulada</h4><div class="individual-chart-wrap"><canvas id="individualChart"></canvas></div></div><div class="individual-side-box"><h4>Resumo individual</h4><div class="individual-list"><div class="individual-list-item"><span>Dias com venda</span><strong id="individualDiasAtivos">-</strong></div><div class="individual-list-item"><span>Melhor dia</span><strong id="individualMelhorDia">-</strong></div><div class="individual-list-item"><span>Menor dia com venda</span><strong id="individualPiorDia">-</strong></div><div class="individual-list-item"><span>Melhor semana</span><strong id="individualMelhorSemana">-</strong></div><div class="individual-list-item"><span>Maior sequência</span><strong id="individualStreak" class="streak-pill">-</strong></div></div></div></div>
     </section>
 
-    <section id="alertaMeta" class="alerta-meta vendas-area">
-      <div class="alerta-left"><span class="alerta-label">Status da meta</span><strong id="alertaTitulo">Calculando...</strong><p id="alertaTexto">Analisando ritmo comercial do mês.</p></div>
-      <div class="alerta-pill">Análise automática</div>
-    </section>
+    <section id="alertaMeta" class="alerta-meta vendas-area"><div class="alerta-left"><span class="alerta-label">Status da meta</span><strong id="alertaTitulo">Calculando...</strong><p id="alertaTexto">Analisando ritmo comercial do mês.</p></div><div class="alerta-pill">Análise automática</div></section>
+    <section class="sprint-grid vendas-area"><div class="sprint-card projecao"><span>Projeção final</span><strong id="projecaoFinal">R$ 0,00</strong><small id="projecaoPercentual">0% da meta projetada</small><div class="projecao-track"><div id="metaProjetadaBarra"></div></div></div><div class="sprint-card ritmo"><span>Ritmo ideal hoje</span><strong id="ritmoIdealHoje">R$ 0,00</strong><small id="ritmoIdealLegenda">Ideal acumulado até hoje</small></div><div class="sprint-card desvio"><span>Desvio da meta</span><strong id="desvioMeta">R$ 0,00</strong><small id="desvioMetaLegenda">Comparado ao ideal</small></div><div class="sprint-card media"><span>Média necessária</span><strong id="mediaNecessaria">R$ 0,00</strong><small id="mediaNecessariaLegenda">Para fechar a meta</small></div><div class="sprint-card previsao"><span>Previsão de batimento</span><strong id="previsaoMeta">-</strong><small id="previsaoMetaLegenda">Mantendo o ritmo atual</small></div></section>
+    <section class="leader-card vendas-area"><div class="section-title"><h3>Líder do mês</h3></div><div id="liderMes" class="leader-content">Carregando...</div></section>
+    <section class="chart-card vendas-area"><div class="section-title"><h3>Receita acumulada</h3></div><p class="chart-subtitle">Comparação entre o realizado do mês e a meta ideal diária</p><div class="chart-wrap"><canvas id="receitaChart"></canvas></div></section>
 
-    <section class="sprint-grid vendas-area">
-      <div class="sprint-card projecao"><span>Projeção final</span><strong id="projecaoFinal">R$ 0,00</strong><small id="projecaoPercentual">0% da meta projetada</small><div class="projecao-track"><div id="metaProjetadaBarra"></div></div></div>
-      <div class="sprint-card ritmo"><span>Ritmo ideal hoje</span><strong id="ritmoIdealHoje">R$ 0,00</strong><small id="ritmoIdealLegenda">Ideal acumulado até hoje</small></div>
-      <div class="sprint-card desvio"><span>Desvio da meta</span><strong id="desvioMeta">R$ 0,00</strong><small id="desvioMetaLegenda">Comparado ao ideal</small></div>
-      <div class="sprint-card media"><span>Média necessária</span><strong id="mediaNecessaria">R$ 0,00</strong><small id="mediaNecessariaLegenda">Para fechar a meta</small></div>
-      <div class="sprint-card previsao"><span>Previsão de batimento</span><strong id="previsaoMeta">-</strong><small id="previsaoMetaLegenda">Mantendo o ritmo atual</small></div>
-    </section>
-
-    <section class="leader-card vendas-area">
-      <div class="section-title"><h3>Líder do mês</h3></div>
-      <div id="liderMes" class="leader-content">Carregando...</div>
-    </section>
-
-    <section class="chart-card vendas-area">
-      <div class="section-title"><h3>Receita acumulada</h3></div>
-      <p class="chart-subtitle">Comparação entre o realizado do mês e a meta ideal diária</p>
-      <div class="chart-wrap"><canvas id="receitaChart"></canvas></div>
-    </section>
-
-    <section class="disparos-section disparos-area">
-      <div class="section-title"><h3>Performance de Disparos</h3><select id="filtroSemanaDisparos" class="week-select"></select></div>
-      <div class="disparos-grid">
-        <div class="disparo-card"><span>Conectados</span><strong id="disparosConectados">0</strong></div>
-        <div class="disparo-card"><span>Vendas</span><strong id="disparosVendas">0</strong></div>
-        <div class="disparo-card"><span>Conversão</span><strong id="disparosConversao">0%</strong></div>
-        <div class="disparo-card"><span>Melhor conversão</span><strong id="disparosMelhor">-</strong></div>
-      </div>
-      <div id="comparativoSemanas" class="comparativo-semanas"></div>
-      <div id="melhoresSemanas" class="melhores-semanas"></div>
-      <div class="comparativo-meses-box">
-        <div class="comparativo-meses-header"><h3>Comparativo entre meses</h3><div class="meses-selects"><select id="mesComparativoA"></select><select id="mesComparativoB"></select></div></div>
-        <div class="comparativo-meses-cards">
-          <div class="mes-card"><span id="labelMesA">Mês A</span><strong id="vendasMesA">0</strong><small>Vendas</small></div>
-          <div class="mes-card"><span id="labelMesB">Mês B</span><strong id="vendasMesB">0</strong><small>Vendas</small></div>
-          <div class="mes-card"><span>Diferença</span><strong id="diferencaMeses">0</strong><small id="percentualDiferencaMeses">0%</small></div>
-          <div class="mes-card"><span>Melhor mês</span><strong id="melhorMesComparativo">-</strong><small>Por vendas</small></div>
-        </div>
-        <div class="chart-wrap disparos-chart-wrap"><canvas id="comparativoMesesChart"></canvas></div>
-      </div>
-      <div id="tabelaDisparos" class="disparos-table-wrap"></div>
-    </section>
+    <section class="disparos-section disparos-area"><div class="section-title"><h3>Performance de Disparos</h3><select id="filtroSemanaDisparos" class="week-select"></select></div><div class="disparos-grid"><div class="disparo-card"><span>Conectados</span><strong id="disparosConectados">0</strong></div><div class="disparo-card"><span>Vendas</span><strong id="disparosVendas">0</strong></div><div class="disparo-card"><span>Conversão</span><strong id="disparosConversao">0%</strong></div><div class="disparo-card"><span>Melhor conversão</span><strong id="disparosMelhor">-</strong></div></div><div id="comparativoSemanas" class="comparativo-semanas"></div><div id="melhoresSemanas" class="melhores-semanas"></div><div class="comparativo-meses-box"><div class="comparativo-meses-header"><h3>Comparativo entre meses</h3><div class="meses-selects"><select id="mesComparativoA"></select><select id="mesComparativoB"></select></div></div><div class="comparativo-meses-cards"><div class="mes-card"><span id="labelMesA">Mês A</span><strong id="vendasMesA">0</strong><small>Vendas</small></div><div class="mes-card"><span id="labelMesB">Mês B</span><strong id="vendasMesB">0</strong><small>Vendas</small></div><div class="mes-card"><span>Diferença</span><strong id="diferencaMeses">0</strong><small id="percentualDiferencaMeses">0%</small></div><div class="mes-card"><span>Melhor mês</span><strong id="melhorMesComparativo">-</strong><small>Por vendas</small></div></div><div class="chart-wrap disparos-chart-wrap"><canvas id="comparativoMesesChart"></canvas></div></div><div id="tabelaDisparos" class="disparos-table-wrap"></div></section>
 
     <section class="ranking-section vendas-area"><div class="section-title"><h3>Ranking</h3></div><div id="ranking" class="ranking-grid"></div></section>
     <section class="table-section vendas-area"><div class="section-title"><h3>Vendas por dia</h3></div><div id="tabela" class="table-wrap"></div></section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js?v=14"></script>
-  <script src="sprint1.js?v=1"></script>
-  <script src="sprint3.js?v=1"></script>
-  <script src="sprint4.js?v=1"></script>
-  <script src="sprint5.js?v=1"></script>
-  <script src="tech-upgrade.js?v=1"></script>
-  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script src="app.js?v=14"></script><script src="sprint1.js?v=1"></script><script src="sprint3.js?v=1"></script><script src="sprint4.js?v=1"></script><script src="sprint5.js?v=1"></script><script src="tech-upgrade.js?v=1"></script><script src="webinar-compare.js?v=1"></script>
 </body>
 </html>
