@@ -1,6 +1,7 @@
 (() => {
   const URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmVbNM2gBp5BzWLEVmp4gXvXLX9B-Lv62vqXiTLfN1IJ26uhe8M9fbudwtJVP4WVCQVdW7qd_NnewY/pub?gid=1899560077&single=true&output=csv";
   const MAX = 1000000;
+  const META_MENSAL = 250000;
   let chart = null;
   const mesesNome = {"01":"Janeiro","02":"Fevereiro","03":"Março","04":"Abril","05":"Maio","06":"Junho","07":"Julho","08":"Agosto","09":"Setembro","10":"Outubro","11":"Novembro","12":"Dezembro"};
   const colors = ["#22c55e", "#8b5cf6", "#3b82f6", "#f59e0b", "#06b6d4", "#ef4444", "#ec4899", "#14b8a6", "#a855f7", "#84cc16", "#f97316", "#64748b"];
@@ -54,10 +55,18 @@
     const sorted = [...meses].sort((a,b)=>Number(a.mes)-Number(b.mes)); const first=sorted[0], last=sorted[sorted.length-1]; const diff = last.total - first.total; const pct = first.total > 0 ? diff / first.total * 100 : 0; const cls = diff >= 0 ? "delta-up" : "delta-down";
     set("monthCompareTotalA", brl(first.total)); set("monthCompareTotalB", brl(last.total)); set("monthCompareDelta", (diff >= 0 ? "+" : "-") + brl(Math.abs(diff))); set("monthComparePct", (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%"); set("monthCompareBestCloser", last.melhorCloser ? last.melhorCloser.nome + " • " + brl(last.melhorCloser.total) : "-"); set("monthCompareBestDay", last.melhorDia ? last.melhorDia + " • " + brl(last.totalDia[last.melhorDia] || 0) : "-"); set("monthCompareAvg", brl(last.mediaDiaria));
     const d=document.getElementById("monthCompareDelta"), p=document.getElementById("monthComparePct"); if(d)d.className=cls; if(p)p.className=cls;
-    const legend=document.getElementById("monthCompareLegend"); if(legend) legend.textContent = `${sorted.length} mês(es) selecionado(s). Evolução de ${first.label} até ${last.label}: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%.`;
+    const legend=document.getElementById("monthCompareLegend"); if(legend) legend.textContent = `${sorted.length} mês(es) selecionado(s). Evolução de ${first.label} até ${last.label}: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%. Linha tracejada = meta ideal acumulada de ${brl(META_MENSAL)}.`;
     renderChart(sorted);
   }
-  function renderChart(meses) { const canvas=document.getElementById("monthCompareChart"); if(!canvas||typeof Chart==="undefined")return; const existing=Chart.getChart?Chart.getChart(canvas):null; if(existing)existing.destroy(); if(chart)chart.destroy(); const labels=Array.from({length:31},(_,i)=>String(i+1).padStart(2,"0")); chart=new Chart(canvas,{type:"line",data:{labels,datasets:meses.map((m,i)=>{ const color=colors[i%colors.length]; return {label:m.label,data:m.acumulado,borderColor:color,backgroundColor:hexToRgba(color,.14),fill:i===meses.length-1,tension:.35,borderWidth:3,pointRadius:2,pointHoverRadius:5};})},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{labels:{color:"#cbd5e1",font:{weight:"700"}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": "+brl(ctx.raw)}}},scales:{x:{grid:{color:"rgba(148,163,184,.10)"},ticks:{color:"#94a3b8"}},y:{beginAtZero:true,grid:{color:"rgba(148,163,184,.14)"},ticks:{color:"#94a3b8",callback:brl}}}}}); }
+  function renderChart(meses) {
+    const canvas=document.getElementById("monthCompareChart"); if(!canvas||typeof Chart==="undefined")return;
+    const existing=Chart.getChart?Chart.getChart(canvas):null; if(existing)existing.destroy(); if(chart)chart.destroy();
+    const labels=Array.from({length:31},(_,i)=>String(i+1).padStart(2,"0"));
+    const metaData=labels.map((_,i)=>META_MENSAL/31*(i+1));
+    const datasets=meses.map((m,i)=>{ const color=colors[i%colors.length]; return {label:m.label,data:m.acumulado,borderColor:color,backgroundColor:hexToRgba(color,.14),fill:i===meses.length-1,tension:.35,borderWidth:3,pointRadius:2,pointHoverRadius:5};});
+    datasets.push({label:"Meta ideal",data:metaData,borderColor:"#f59e0b",backgroundColor:"rgba(245,158,11,.06)",borderDash:[8,6],fill:false,tension:0,borderWidth:3,pointRadius:0,pointHoverRadius:4});
+    chart=new Chart(canvas,{type:"line",data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{labels:{color:"#334155",font:{weight:"700"}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": "+brl(ctx.raw)}}},scales:{x:{grid:{color:"rgba(148,163,184,.16)"},ticks:{color:"#64748b"}},y:{beginAtZero:true,grid:{color:"rgba(148,163,184,.18)"},ticks:{color:"#64748b",callback:brl}}}}});
+  }
   async function init() { try { const res = await fetch(URL + "&techUpgrade=" + Date.now(), {cache:"no-store"}); if (!res.ok) throw new Error(res.status); const base = montarBase(parseCSV(await res.text())); renderRanking(base); setupMulti(base); renderCompare(base); } catch (e) { console.error("Erro no upgrade visual:", e); } }
   setTimeout(init, 1000); setInterval(init, 300000);
 })();
