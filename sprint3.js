@@ -50,6 +50,9 @@ async function sprint3CarregarReembolsos() {
 
   try {
     await carregarScriptSprint3("refund-dashboard.js");
+    setInterval(() => {
+      if (typeof refundRefresh === "function") refundRefresh();
+    }, 300000);
   } catch (e) {
     console.error("Erro ao carregar dashboard de reembolsos:", e);
   }
