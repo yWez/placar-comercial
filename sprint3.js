@@ -49,7 +49,6 @@ async function sprint3CarregarReembolsos() {
   }
 
   try {
-    await carregarScriptSprint3("refund-data.js");
     await carregarScriptSprint3("refund-dashboard.js");
   } catch (e) {
     console.error("Erro ao carregar dashboard de reembolsos:", e);
